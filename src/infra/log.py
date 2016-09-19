@@ -29,12 +29,12 @@ import time
 
 # Mapping of 
 str_py_lvl = {
-    "criticial": logging.CRITICAL,
-    "error": logging.ERROR,
-    "warning": logging.WARNING,
-    "info": logging.INFO,
-    "debug": logging.DEBUG,
-    "all": logging.NOTSET
+    "critical": logging.CRITICAL,
+    "error":    logging.ERROR,
+    "warning":  logging.WARNING,
+    "info":     logging.INFO,
+    "debug":    logging.DEBUG,
+    "all":      logging.NOTSET
 }
 
 # Define the NA default log format

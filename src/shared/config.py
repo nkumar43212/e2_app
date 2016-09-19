@@ -32,7 +32,7 @@ class E2Config(object):
         # TODO --- define in e2consts
         self.log_file_path = '/tmp'             # Log file path
         self.log_file_name = 'e2_app.log'       # Log file name
-        self.log_level = 'INFO'                 # Log level
+        self.log_level = 'info'                 # Log level
         self.log_file_num_backup = 10           # Number of backup log files
         self.log_file_max = 5242880             # Maximum size to which a log file can grow = 5 MB
 
@@ -66,7 +66,7 @@ if __name__ == "__main__":
     filename = filename.split(".")
     filename = filename[0]
     _LOG.set_handler("/tmp/" + filename + ".log", 65535, 2, "")
-    _LOG.set_level("DEBUG")
+    _LOG.set_level("debug")
 
     # Initialize E2 Config
     e2config = E2Config()
