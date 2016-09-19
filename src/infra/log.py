@@ -53,7 +53,6 @@ class RootLogger(object):
 
         self.logger.setLevel(self.get_level(level))
         if fname is None:
-            # TODO --- check this address on mac and linux
             # Check for supported platforms
             if sys.platform.startswith('linux'):
                 handler = logging.handlers.SysLogHandler(address='/dev/log')
