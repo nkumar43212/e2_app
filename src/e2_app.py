@@ -52,6 +52,7 @@ if __name__ == "__main__":
                          5242880, 5)
         _LOG.set_level(config_handler.e2_cfg.log_level)
 
+        # Start the web service
         web_rest_api(config_handler.e2_cfg.host, config_handler.e2_cfg.http_port, config_handler.e2_cfg.mode)
 
     except E2StartupException as e:
