@@ -54,7 +54,9 @@ class E2Config(object):
 
 if __name__ == "__main__":
     import os
-    from log import Logger
+    import sys
+    sys.path.append(os.path.expanduser('../'))
+    from infra.log import Logger
 
     # Logging
     _LOG = Logger("E2ConfigTest", __name__, "debug")
