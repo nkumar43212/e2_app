@@ -21,6 +21,7 @@
 # can get jumbled in places.
 #
 
+import sys
 import logging
 import logging.handlers
 import threading
@@ -53,7 +54,13 @@ class RootLogger(object):
         self.logger.setLevel(self.get_level(level))
         if fname is None:
             # TODO --- check this address on mac and linux
-            handler = logging.handlers.SysLogHandler(address='/var/run/syslog')
+            # Check for supported platforms
+            if sys.platform.startswith('linux'):
+                handler = logging.handlers.SysLogHandler(address='/dev/log')
+            elif sys.platform.startswith('darwin'):
+                handler = logging.handlers.SysLogHandler(address='/var/run/syslog')
+            else:
+                raise Exception("Platform %s not supported." % sys.platform)
             formatter = logging.Formatter(SYSLOG_FMT)
         else:
             handler = logging.handlers.RotatingFileHandler(
