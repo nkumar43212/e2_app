@@ -19,6 +19,7 @@ from infra.basicfunc import *
 from collections import OrderedDict
 from bottle import request, response, post, get, put, delete
 from infra.log import Logger
+from contrail_infra_client.provision_mxrouters import *
 
 # Logger
 _LOG = Logger("e2_app", __name__, "debug")
@@ -125,6 +126,10 @@ def ne_creation_handler():
     # print(json.dumps(ne_obj, default=jdefault))
     _ne_dict[name] = ne_obj
 
+    # Create in Contrail --- TODO REVISIT --- Check for error condition as well
+    mx_router = MxRouter(' ')
+    mx_router.add_network_element(name, mgmt_ip)
+
     # return 200 Success
     _LOG.debug("Good, return 200 Success")
     response.headers['Content-Type'] = 'application/json'
@@ -171,6 +176,10 @@ def ne_delete_handler(name):
     except ValueError:
         response.status = 400
         return
+
+    # Delete in Contrail --- TODO REVISIT --- Check for error condition as well
+    mx_router = MxRouter(' ')
+    mx_router.delete_network_element(name)
 
     # Delete the network element object as well
     del _ne_dict[name]
