@@ -16,3 +16,7 @@ Note: Currently "start/stop" actions are not implement. **TBD for future**.
 * 3. src/infra --- commonly used one time basic infra code
 * 4. src/shared --- specific to E2 for now
 
+# Client curl commands to add/delete Network Element and ConnLink:
+* Sample example: ./client.sh <host_ip> <host_port>
+  if host_ip and host_port is not provided, default = localhost, 10001
+
