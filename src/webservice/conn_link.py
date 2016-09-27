@@ -115,7 +115,7 @@ def conn_link_creation_handler():
 
         # Check for existence - left node
         if left_node not in _ne_dict.keys():
-            _LOG.exception("Name does not exist " + name + " in data = " + str(data))
+            _LOG.exception("left_node does not exist " + name + " in data = " + str(data))
             raise ValueError
         else:
             ne_left_obj = _ne_dict[left_node]
@@ -124,7 +124,7 @@ def conn_link_creation_handler():
 
         # Check for existence - right node
         if right_node not in _ne_dict.keys():
-            _LOG.exception("Name does not exist " + name + " in data = " + str(data))
+            _LOG.exception("right_node does not exist " + name + " in data = " + str(data))
             raise ValueError
         else:
             ne_right_obj = _ne_dict[right_node]
