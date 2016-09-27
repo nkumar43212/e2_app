@@ -1,0 +1,177 @@
+Sequence of client curl command:
+--------------------------------
+127.0.0.1 - - [26/Sep/2016 19:09:59] "POST /network-elements HTTP/1.1" 200 21
+127.0.0.1 - - [26/Sep/2016 19:09:59] "POST /network-elements HTTP/1.1" 200 22
+127.0.0.1 - - [26/Sep/2016 19:09:59] "POST /conn-links HTTP/1.1" 200 20
+127.0.0.1 - - [26/Sep/2016 19:09:59] "GET /network-elements HTTP/1.1" 200 278
+127.0.0.1 - - [26/Sep/2016 19:09:59] "GET /conn-links HTTP/1.1" 200 189
+127.0.0.1 - - [26/Sep/2016 19:09:59] "DELETE /conn-links/conn-one HTTP/1.1" 200 0
+127.0.0.1 - - [26/Sep/2016 19:09:59] "DELETE /network-elements/vmxAccess HTTP/1.1" 200 0
+127.0.0.1 - - [26/Sep/2016 19:09:59] "DELETE /network-elements/vmxService HTTP/1.1" 200 0
+
+
+Client Curl Output:
+-------------------
+# ./client.sh
+Host IP = localhost
+Host Port = 10001
+Press [Enter] key to continue or [Ctrl+C] to exit ...
+-onnected to localhost (127.0.0.1) port 10001 (#0)
+> POST /network-elements HTTP/1.1
+> Host: localhost:10001
+> User-Agent: curl/7.43.0
+> Accept: */*
+> Content-Type: application/json
+> Cache-Control: no-cache
+> Content-Length: 67
+>
+* upload completely sent off: 67 out of 67 bytes
+* HTTP 1.0, assume close after body
+< HTTP/1.0 200 OK
+< Date: Tue, 27 Sep 2016 02:30:42 GMT
+< Server: WSGIServer/0.1 Python/2.7.11
+< Content-Length: 21
+< Content-Type: application/json
+<
+* Closing connection 0
+{"name": "vmxAccess"}
+
+*   Trying 127.0.0.1...
+* Connected to localhost (127.0.0.1) port 10001 (#0)
+> POST /network-elements HTTP/1.1
+> Host: localhost:10001
+> User-Agent: curl/7.43.0
+> Accept: */*
+> Content-Type: application/json
+> Cache-Control: no-cache
+> Content-Length: 69
+>
+* upload completely sent off: 69 out of 69 bytes
+* HTTP 1.0, assume close after body
+< HTTP/1.0 200 OK
+< Date: Tue, 27 Sep 2016 02:30:42 GMT
+< Server: WSGIServer/0.1 Python/2.7.11
+< Content-Length: 22
+< Content-Type: application/json
+<
+* Closing connection 0
+{"name": "vmxService"}
+
+*   Trying 127.0.0.1...
+* Connected to localhost (127.0.0.1) port 10001 (#0)
+> POST /conn-links HTTP/1.1
+> Host: localhost:10001
+> User-Agent: curl/7.43.0
+> Accept: */*
+> Content-Type: application/json
+> Cache-Control: no-cache
+> Content-Length: 172
+>
+* upload completely sent off: 172 out of 172 bytes
+* HTTP 1.0, assume close after body
+< HTTP/1.0 200 OK
+< Date: Tue, 27 Sep 2016 02:30:42 GMT
+< Server: WSGIServer/0.1 Python/2.7.11
+< Content-Length: 20
+< Content-Type: application/json
+<
+* Closing connection 0
+{"name": "conn-one"}
+
+*   Trying 127.0.0.1...
+* Connected to localhost (127.0.0.1) port 10001 (#0)
+> GET /network-elements HTTP/1.1
+> Host: localhost:10001
+> User-Agent: curl/7.43.0
+> Accept: */*
+> Content-Type: application/json
+> Cache-Control: no-cache
+>
+* HTTP 1.0, assume close after body
+< HTTP/1.0 200 OK
+< Date: Tue, 27 Sep 2016 02:30:42 GMT
+< Server: WSGIServer/0.1 Python/2.7.11
+< Content-Length: 278
+< Content-Type: application/json
+< Cache-Control: no-cache
+<
+* Closing connection 0
+{"network-elements": [{"username": "root", "name": "vmxService", "mgmt_ip": "169.254.0.20", "ref_cnt": 1, "role": "service", "password": "Embe1mpls"}, {"username": "root", "name": "vmxAccess", "mgmt_ip": "169.254.0.22", "ref_cnt": 1, "role": "access", "password": "Embe1mpls"}]}
+
+*   Trying 127.0.0.1...
+* Connected to localhost (127.0.0.1) port 10001 (#0)
+> GET /conn-links HTTP/1.1
+> Host: localhost:10001
+> User-Agent: curl/7.43.0
+> Accept: */*
+> Referer: rbose
+> Content-Type: application/json
+> Cache-Control: no-cache
+>
+* HTTP 1.0, assume close after body
+< HTTP/1.0 200 OK
+< Date: Tue, 27 Sep 2016 02:30:42 GMT
+< Server: WSGIServer/0.1 Python/2.7.11
+< Content-Length: 189
+< Content-Type: application/json
+< Cache-Control: no-cache
+<
+* Closing connection 0
+{"conn-links": [{"right_links": ["ge-1/0/1", "ge-2/0/2"], "fabric": null, "right_node": "vmxService", "left_node": "vmxAccess", "left_links": ["ge-0/0/1", "ge-0/0/2"], "name": "conn-one"}]}
+
+*   Trying 127.0.0.1...
+* Connected to localhost (127.0.0.1) port 10001 (#0)
+> DELETE /conn-links/conn-one HTTP/1.1
+> Host: localhost:10001
+> User-Agent: curl/7.43.0
+> Accept: */*
+> Content-Type: application/json
+> Cache-Control: no-cache
+>
+* HTTP 1.0, assume close after body
+< HTTP/1.0 200 OK
+< Date: Tue, 27 Sep 2016 02:30:42 GMT
+< Server: WSGIServer/0.1 Python/2.7.11
+< Content-Length: 0
+< Content-Type: text/html; charset=UTF-8
+<
+* Closing connection 0
+
+
+*   Trying 127.0.0.1...
+* Connected to localhost (127.0.0.1) port 10001 (#0)
+> DELETE /network-elements/vmxAccess HTTP/1.1
+> Host: localhost:10001
+> User-Agent: curl/7.43.0
+> Accept: */*
+> Content-Type: application/json
+> Cache-Control: no-cache
+>
+* HTTP 1.0, assume close after body
+< HTTP/1.0 200 OK
+< Date: Tue, 27 Sep 2016 02:30:42 GMT
+< Server: WSGIServer/0.1 Python/2.7.11
+< Content-Length: 0
+< Content-Type: text/html; charset=UTF-8
+<
+* Closing connection 0
+
+
+*   Trying 127.0.0.1...
+* Connected to localhost (127.0.0.1) port 10001 (#0)
+> DELETE /network-elements/vmxService HTTP/1.1
+> Host: localhost:10001
+> User-Agent: curl/7.43.0
+> Accept: */*
+> Content-Type: application/json
+> Cache-Control: no-cache
+>
+* HTTP 1.0, assume close after body
+< HTTP/1.0 200 OK
+< Date: Tue, 27 Sep 2016 02:30:42 GMT
+< Server: WSGIServer/0.1 Python/2.7.11
+< Content-Length: 0
+< Content-Type: text/html; charset=UTF-8
+<
+* Closing connection 0
+
