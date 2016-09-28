@@ -30,13 +30,11 @@ class NetworkElement(object):
 class MxRouter(object):
 
     def __init__(self, args_str):
-	# import pdb; pdb.set_trace()
         self._args = None
 	self.mxrouters = {}
 	self.mxrouters_id = {}
         if args_str == None:
             args_str = ' '.join(sys.argv[1:])
-        # print args_str
         self._parse_args(args_str)
 
         self._vnc_lib = VncApi(self._args.admin_user,
@@ -74,6 +72,8 @@ class MxRouter(object):
         pr = PhysicalRouter(name)
         pr.physical_router_management_ip = mgmt_ip
         pr.physical_router_vendor_name = 'juniper'
+        pr.physical_router_product_name = 'mx'
+        pr.physical_router_vnc_managed = True
         uc = UserCredentials('root', password)
         pr.set_physical_router_user_credentials(uc)
         pr.set_bgp_router(bgp_router)
@@ -82,7 +82,6 @@ class MxRouter(object):
     # end create_router
 
     def add_network_element(self, name, mgmt_ip):
-	#import pdb; pdb.set_trace()
 	network_element = self.mxrouters.get(name)
         if not network_element:
             network_element = NetworkElement(name, mgmt_ip)
@@ -93,7 +92,8 @@ class MxRouter(object):
         ipam_name = 'ipam1'
         ipam_name += name
         try:
-            ipam_obj = self._vnc_lib.network_ipam_read(fq_name=[u'default-domain', u'default-project', ipam_name])
+            ipam_obj = self._vnc_lib.network_ipam_read(fq_name=[self._args.admin_tenant_name, \
+			    self._args.admin_tenant_project, ipam_name])
         except NoIdError:
             pass
         if ipam_obj is None:
@@ -105,57 +105,60 @@ class MxRouter(object):
         vn_name = 'vn1'
         vn_name += name
         try:
-            vn_obj = self._vnc_lib.virtual_network_read(fq_name=[u'default-domain', u'default-project', vn_name])
+            vn_obj = self._vnc_lib.virtual_network_read(fq_name=[self._args.admin_tenant_name, \
+			    self._args.admin_tenant_project, vn_name])
         except NoIdError:
             pass
  
         if vn_obj is None: 
             vn_obj = VirtualNetwork(vn_name)
 
-            vn_obj.add_network_ipam(ipam_obj, VnSubnetsType([IpamSubnetType(SubnetType("10.0.0.0", 24))]))
+            vn_obj.add_network_ipam(ipam_obj, VnSubnetsType([IpamSubnetType(SubnetType("10.0.0.0", \
+						    24))]))
             vn1_uuid = self._vnc_lib.virtual_network_create(vn_obj)
 
-        #physical-network
+        vni_obj_properties = vn_obj.get_virtual_network_properties() or VirtualNetworkType()
+        #set the virtual-network to be 'mx' type.
+        vni_obj_properties.set_forwarding_mode('mx')
+        vn_obj.set_virtual_network_properties(vni_obj_properties)
+        self._vnc_lib.virtual_network_update(vn_obj)
+
+        #physical-router
         pr = None
         try:
-            pr = self._vnc_lib.physical_router_read(fq_name=[u'default-global-system-config', network_element._name])
+            pr = self._vnc_lib.physical_router_read(fq_name=[self._args.admin_tenant_group, \
+			    network_element._name])
         except NoIdError:
             pass
  
         if pr is None:
-            bgp_router, pr = self.create_router(network_element._name, network_element._mgmt_ip, 'Embe1mpls')
+            bgp_router, pr = self.create_router(network_element._name, network_element._mgmt_ip, \
+			    'Embe1mpls')
             pr.set_virtual_network(vn_obj)
             self._vnc_lib.physical_router_update(pr)
 
-    #def create_physical_interface(self):
-        #virtual-network
-        vn_obj = None
-        try:
-            vn_obj = self._vnc_lib.virtual_network_read(fq_name=[u'default-domain', u'default-project', vn_name])
-        except NoIdError:
-            pass
- 
-        if vn_obj is None: 
-            vn_obj = VirtualNetwork(vn_name)
         #physical-interface
         pi = None
         try:
-            pi = self._vnc_lib.physical_interface_read(fq_name=[u'default-global-system-config', network_element._name, u'ge-0/0/1'])
+            pi = self._vnc_lib.physical_interface_read(fq_name=[self._args.admin_tenant_group, \
+			    network_element._name, self._args.physical_intf])
         except NoIdError:
             pass
         if pi is None:
-            pi = PhysicalInterface('ge-0/0/1', parent_obj = pr)
+            pi = PhysicalInterface(self._args.physical_intf, parent_obj = pr)
             pi_id = self._vnc_lib.physical_interface_create(pi)
 
-	vmi_name = 'vmi1'
-	vmi_name += name
+        vmi_name = 'vmi1'
+        vmi_name += name
         fq_name = ['default-domain', 'default-project', vmi_name]
-        default_project = self._vnc_lib.project_read(fq_name=[u'default-domain', u'default-project'])
+        default_project = self._vnc_lib.project_read(fq_name=[self._args.admin_tenant_name, \
+			self._args.admin_tenant_project])
 
         #virtual-machine-interface
         vmi = None
         try:
-            vmi = self._vnc_lib.virtual_machine_interface_read(fq_name=[u'default-domain', u'default-project', vmi_name])
+            vmi = self._vnc_lib.virtual_machine_interface_read(fq_name=[self._args.admin_tenant_name,\
+			    self._args.admin_tenant_project, vmi_name])
         except NoIdError:
             pass
         if vmi is None:
@@ -167,13 +170,14 @@ class MxRouter(object):
         #logical-interface
         li = None
         try:
-            li = self._vnc_lib.logical_interface_read(fq_name=[u'default-global-system-config', network_element._name, u'ge-0/0/1', u'ge-0/0/1.0'])
+            li = self._vnc_lib.logical_interface_read(fq_name=[self._args.admin_tenant_group, \
+			    network_element._name, self._args.physical_intf, self._args.logical_intf])
         except NoIdError:
             pass
        
         if li is None:
-            li = LogicalInterface('ge-0/0/1.0', parent_obj = pi)
-            li.set_logical_interface_vlan_tag(100)
+            li = LogicalInterface(self._args.logical_intf, parent_obj = pi)
+            li.set_logical_interface_vlan_tag(int(self._args.vlan_tag))
             li.set_virtual_machine_interface(vmi)
             li_id = self._vnc_lib.logical_interface_create(li)
     # end add_network_element
@@ -183,95 +187,85 @@ class MxRouter(object):
         network_element = self.mxrouters.get(name)
 
         if network_element:
+            print network_element._name
+            print network_element._mgmt_ip
             del self.mxrouters_id[id(network_element)]
             del self.mxrouters[network_element._name]
 
+        #logical-interface
         li = None
         try:
-            li = self._vnc_lib.logical_interface_read(fq_name=[u'default-global-system-config', name, u'ge-0/0/0', u'ge-0/0/0.0'])
+            li = self._vnc_lib.logical_interface_read(fq_name=[self._args.admin_tenant_group, name, \
+			    self._args.physical_intf, self._args.logical_intf])
         except NoIdError:
             pass
        
         if li is not None:
             self._vnc_lib.logical_interface_delete(li.get_fq_name())
 
-        try:
-            li = self._vnc_lib.logical_interface_read(fq_name=[u'default-global-system-config', name, u'ge-0/0/0', u'ge-0/0/0.1'])
-        except NoIdError:
-            pass
-
-        if li is not None:
-            self._vnc_lib.logical_interface_delete(li.get_fq_name())
-
-        li = None
-        try:
-            li = self._vnc_lib.logical_interface_read(fq_name=[u'default-global-system-config', name, u'ge-0/0/1', u'ge-0/0/1.0'])
-        except NoIdError:
-            pass
-
-        if li is not None:
-            self._vnc_lib.logical_interface_delete(li.get_fq_name())
-
+        #virtual-machine-interface
         vmi = None
-	vmi_name = 'vmi1'
-	vmi_name += name
+        vmi_name = 'vmi1'
+        vmi_name += name
         try:
-            vmi = self._vnc_lib.virtual_machine_interface_read(fq_name=[u'default-domain', u'default-project', vmi_name])
+            vmi = self._vnc_lib.virtual_machine_interface_read(fq_name=[self._args.admin_tenant_name, \
+			    self._args.admin_tenant_project, vmi_name])
         except NoIdError:
             pass
         if vmi is not None:
             self._vnc_lib.virtual_machine_interface_delete(vmi.get_fq_name())
 
+        #physical-interface
         pi = None
         try:
-            pi = self._vnc_lib.physical_interface_read(fq_name=[u'default-global-system-config', name, u'ge-0/0/0'])
+            pi = self._vnc_lib.physical_interface_read(fq_name=[self._args.admin_tenant_group, \
+			    name, self._args.physical_intf])
         except NoIdError:
             pass
         if pi is not None:
             pi_id = self._vnc_lib.physical_interface_delete(pi.get_fq_name())
 
-        pi = None
-        try:
-            pi = self._vnc_lib.physical_interface_read(fq_name=[u'default-global-system-config', name, u'ge-0/0/1'])
-        except NoIdError:
-            pass
-        if pi is not None:
-            pi_id = self._vnc_lib.physical_interface_delete(pi.get_fq_name())
-
+        #physical-router
         pr = None
         try:
-            pr = self._vnc_lib.physical_router_read(fq_name=[u'default-global-system-config', name])
+            pr = self._vnc_lib.physical_router_read(fq_name=[self._args.admin_tenant_group, name])
         except NoIdError:
             pass
  
         if pr is not None:
             self._vnc_lib.physical_router_delete(pr.get_fq_name())
 
+        #bgp-router
         br = None
         try:
-            br = self._vnc_lib.bgp_router_read(fq_name=[u'default-domain', u'default-project', u'ip-fabric', u'__default__', name])
+            br = self._vnc_lib.bgp_router_read(fq_name=[self._args.admin_tenant_name, \
+			    self._args.admin_tenant_project, u'ip-fabric', u'__default__', name])
         except NoIdError:
             pass
  
         if br is not None:
             self._vnc_lib.bgp_router_delete(br.get_fq_name())
 
+        #virtual-network
         vn_obj = None
         vn_name = 'vn1'
         vn_name += name
         try:
-            vn_obj = self._vnc_lib.virtual_network_read(fq_name=[u'default-domain', u'default-project', vn_name])
+            vn_obj = self._vnc_lib.virtual_network_read(fq_name=[self._args.admin_tenant_name, \
+			    self._args.admin_tenant_project, vn_name])
         except NoIdError:
             pass
  
         if vn_obj is not None: 
             vn1_uuid = self._vnc_lib.virtual_network_delete(vn_obj.get_fq_name())
 
+        #ipam
         ipam_obj = None
         ipam_name = 'ipam1'
         ipam_name += name
         try:
-            ipam_obj = self._vnc_lib.network_ipam_read(fq_name=[u'default-domain', u'default-project', ipam_name])
+            ipam_obj = self._vnc_lib.network_ipam_read(fq_name=[self._args.admin_tenant_name, \
+			    self._args.admin_tenant_project, ipam_name])
         except NoIdError:
             pass
         if ipam_obj is not None:
@@ -287,12 +281,243 @@ class MxRouter(object):
 
     def show_all_network_elements(self):
         for name in list(self.mxrouters):
-            #import pdb; pdb.set_trace()
             network_element = self.get_network_element(name)
             #print "router:%s, ip %d" %s (network_element._name, network_element._mgmt_ip)
             print network_element._name
             print network_element._mgmt_ip
             print "----------"
+
+    def add_network_physical_interfaces(self, name, mgmt_ip, phy_intf):
+	network_element = self.mxrouters.get(name)
+        if not network_element:
+            network_element = NetworkElement(name, mgmt_ip)
+            self.mxrouters_id[id(network_element)] = network_element
+            self.mxrouters[name] = network_element
+
+        #physical-router
+        pr = None
+        try:
+            pr = self._vnc_lib.physical_router_read(fq_name=[self._args.admin_tenant_group, \
+			    network_element._name])
+        except NoIdError:
+	    print 'phy-router lookup failed'
+            return
+ 
+        self._vnc_lib.physical_router_update(pr)
+        #physical-interface
+        pi = None
+        try:
+            pi = self._vnc_lib.physical_interface_read(fq_name=[self._args.admin_tenant_group, \
+			    network_element._name, phy_intf])
+        except NoIdError:
+            pass
+
+        if pi is None:
+            pi = PhysicalInterface(phy_intf, parent_obj = pr)
+            pi_id = self._vnc_lib.physical_interface_create(pi)
+
+        vmi_name = 'vmi1'
+        vmi_name += name
+        fq_name = ['default-domain', 'default-project', vmi_name]
+        default_project = self._vnc_lib.project_read(fq_name=[self._args.admin_tenant_name, \
+			self._args.admin_tenant_project])
+        #virtual-network
+        vn_obj = None
+        vn_name = 'vn1'
+        vn_name += name
+        try:
+            vn_obj = self._vnc_lib.virtual_network_read(fq_name=[self._args.admin_tenant_name, \
+			    self._args.admin_tenant_project, vn_name])
+        except NoIdError:
+            pass
+ 
+        if vn_obj is None: 
+            vn_obj = VirtualNetwork(vn_name)
+
+            vn_obj.add_network_ipam(ipam_obj, VnSubnetsType([IpamSubnetType(SubnetType("10.0.0.0", \
+						    24))]))
+            vn1_uuid = self._vnc_lib.virtual_network_create(vn_obj)
+            vni_obj_properties = vn_obj.get_virtual_network_properties() or VirtualNetworkType()
+            #set the virtual-network to be 'mx' type.
+            vni_obj_properties.set_forwarding_mode('mx')
+            vn_obj.set_virtual_network_properties(vni_obj_properties)
+            self._vnc_lib.virtual_network_update(vn_obj)
+
+        #virtual-machine-interface
+        vmi = None
+        try:
+            vmi = self._vnc_lib.virtual_machine_interface_read(fq_name=[self._args.admin_tenant_name,\
+			    self._args.admin_tenant_project, vmi_name])
+        except NoIdError:
+            pass
+        if vmi is None:
+            vmi = VirtualMachineInterface(fq_name=fq_name, parent_type='project')
+            vmi.set_virtual_network(vn_obj)
+            vmi.device_owner = 'physicalrouter'
+            self._vnc_lib.virtual_machine_interface_create(vmi)
+
+    # end add_network_physical_interfaces
+
+    def del_network_physical_interfaces(self, name, mgmt_ip, phy_intf):
+	network_element = self.mxrouters.get(name)
+        if not network_element:
+            network_element = NetworkElement(name, mgmt_ip)
+            self.mxrouters_id[id(network_element)] = network_element
+            self.mxrouters[name] = network_element
+
+        #physical-router
+        pr = None
+        try:
+            pr = self._vnc_lib.physical_router_read(fq_name=[self._args.admin_tenant_group, \
+			    network_element._name])
+        except NoIdError:
+	    print 'phy-router lookup failed'
+            return
+
+        #virtual-machine-interface
+        vmi = None
+        vmi_name = 'vmi1'
+        vmi_name += name
+        try:
+            vmi = self._vnc_lib.virtual_machine_interface_read(fq_name=[self._args.admin_tenant_name, \
+			    self._args.admin_tenant_project, vmi_name])
+        except NoIdError:
+            pass
+        if vmi is not None:
+            self._vnc_lib.virtual_machine_interface_delete(vmi.get_fq_name())
+
+        #physical-interface
+        pi = None
+        try:
+            pi = self._vnc_lib.physical_interface_read(fq_name=[self._args.admin_tenant_group, \
+			    network_element._name, phy_intf])
+        except NoIdError:
+	    print 'phy-intf lookup failed'
+            return
+
+        pi_id = self._vnc_lib.physical_interface_delete(pi.get_fq_name())
+
+    # end del_network_physical_interfaces
+
+    def add_network_logical_interfaces(self, name, mgmt_ip, phy_intf, logical_intf, vlan_tag):
+	network_element = self.mxrouters.get(name)
+        if not network_element:
+            network_element = NetworkElement(name, mgmt_ip)
+            self.mxrouters_id[id(network_element)] = network_element
+            self.mxrouters[name] = network_element
+
+        #physical-router
+        pr = None
+        try:
+            pr = self._vnc_lib.physical_router_read(fq_name=[self._args.admin_tenant_group, \
+			    network_element._name])
+        except NoIdError:
+	    print 'phy-router lookup failed'
+            return
+ 
+        self._vnc_lib.physical_router_update(pr)
+        #physical-interface
+        pi = None
+        try:
+            pi = self._vnc_lib.physical_interface_read(fq_name=[self._args.admin_tenant_group, \
+			    network_element._name, phy_intf])
+        except NoIdError:
+	    print 'phy-intf lookup failed'
+            return
+
+        #virtual-network
+        vn_obj = None
+        vn_name = 'vn1'
+        vn_name += name
+        try:
+            vn_obj = self._vnc_lib.virtual_network_read(fq_name=[self._args.admin_tenant_name, \
+			    self._args.admin_tenant_project, vn_name])
+        except NoIdError:
+            return
+ 
+        #virtual-machine-interface
+        vmi_name = 'vmi1'
+        vmi_name += name
+        vmi = None
+        try:
+            vmi = self._vnc_lib.virtual_machine_interface_read(fq_name=[self._args.admin_tenant_name, \
+			    self._args.admin_tenant_project, vmi_name])
+        except NoIdError:
+            return
+
+        #logical-interface
+        li = None
+        try:
+            li = self._vnc_lib.logical_interface_read(fq_name=[self._args.admin_tenant_group, \
+			    network_element._name, phy_intf, logical_intf])
+        except NoIdError:
+            pass
+       
+        if li is None:
+            li = LogicalInterface(logical_intf, parent_obj = pi)
+            li.set_logical_interface_vlan_tag(int(vlan_tag))
+            li.set_virtual_machine_interface(vmi)
+            li_id = self._vnc_lib.logical_interface_create(li)
+    # end add_network_logical_interfaces
+
+    def del_network_logical_interfaces(self, name, mgmt_ip, phy_intf, logical_intf):
+	network_element = self.mxrouters.get(name)
+        if not network_element:
+            network_element = NetworkElement(name, mgmt_ip)
+            self.mxrouters_id[id(network_element)] = network_element
+            self.mxrouters[name] = network_element
+
+        #physical-router
+        pr = None
+        try:
+            pr = self._vnc_lib.physical_router_read(fq_name=[self._args.admin_tenant_group, \
+			    network_element._name])
+        except NoIdError:
+	    print 'phy-router lookup failed'
+            return
+ 
+        #physical-interface
+        pi = None
+        try:
+            pi = self._vnc_lib.physical_interface_read(fq_name=[self._args.admin_tenant_group, \
+			    network_element._name, phy_intf])
+        except NoIdError:
+	    print 'phy-intf lookup failed'
+            return
+
+        #virtual-network
+        vn_obj = None
+        vn_name = 'vn1'
+        vn_name += name
+        try:
+            vn_obj = self._vnc_lib.virtual_network_read(fq_name=[self._args.admin_tenant_name, \
+			    self._args.admin_tenant_project, vn_name])
+        except NoIdError:
+            return
+ 
+        #virtual-machine-interface
+        vmi_name = 'vmi1'
+        vmi_name += name
+        vmi = None
+        try:
+            vmi = self._vnc_lib.virtual_machine_interface_read(fq_name=[self._args.admin_tenant_name, \
+			    self._args.admin_tenant_project, vmi_name])
+        except NoIdError:
+	    print 'vmi-intf lookup failed'
+            return
+
+        #logical-interface
+        li = None
+        try:
+            li = self._vnc_lib.logical_interface_read(fq_name=[self._args.admin_tenant_group, \
+			    network_element._name, phy_intf, logical_intf])
+        except NoIdError:
+	    print 'logical-intf lookup failed'
+            return
+       
+        li_id = self._vnc_lib.logical_interface_delete(li.get_fq_name())
+
+    # end del_network_logical_interfaces
 
     def _parse_args(self, args_str):
         '''
@@ -322,14 +547,22 @@ class MxRouter(object):
 	}
         default_misc = {
             'admin_tenant_group': 'default-global-system-config',
+            'admin_tenant_project': 'default-project',
             'router_password': 'Embe1mpls',
         }
+
+        default_intf = {
+            'physical_intf': 'ge-0/0/1',
+            'logical_intf': 'ge-0/0/1.0',
+            'vlan_tag': '100',
+	}
 
         if args.conf_file:
             config = ConfigParser.SafeConfigParser()
             config.read([args.conf_file])
             defaults.update(dict(config.items("DEFAULTS")))
             default_misc.update(dict(config.items("DEFAULTS")))
+            default_intf.update(dict(config.items("DEFAULTS")))
             if 'KEYSTONE' in config.sections():
                 ksopts.update(dict(config.items("KEYSTONE")))
 
@@ -345,6 +578,7 @@ class MxRouter(object):
         )
         defaults.update(ksopts)
         defaults.update(default_misc)
+        defaults.update(default_intf)
         parser.set_defaults(**defaults)
 
         parser.add_argument(
@@ -373,7 +607,7 @@ class MxRouter(object):
 
 
 def main(args_str=None):
-    mx_router = MxRouter(args_str)
+    mx_router = MxRouter(None)
     mx_router.add_network_element('vmx3', '169.254.0.6')
     mx_router.add_network_element('vmx4', '169.254.0.19')
 
@@ -382,15 +616,22 @@ def main(args_str=None):
     print ne._mgmt_ip
     print "--- show all elements---"
     mx_router.show_all_network_elements()
-    #import pdb; pdb.set_trace()
-    print "--- deleting  vmx3 ---"
+
+    #print "--- deleting  vmx3 ---"
     #mx_router.delete_network_element('vmx3')
     print "--- showing remaining elements---"
     mx_router.show_all_network_elements()
-    print "--- deleting  vmx4 ---"
+    #print "--- deleting  vmx4 ---"
     #mx_router.delete_network_element('vmx4')
-    print "--- showing remaining elements---"
+    #print "--- showing remaining elements---"
     mx_router.show_all_network_elements()
+    mx_router.add_network_physical_interfaces('vmx3', '192.254.0.6', 'ge-0/0/0')
+    mx_router.add_network_logical_interfaces('vmx3', '192.254.0.6', 'ge-0/0/0', 'ge-0/0/0.0', '101')
+    mx_router.add_network_logical_interfaces('vmx3', '192.254.0.6', 'ge-0/0/0', 'ge-0/0/0.1', '102')
+    #mx_router.del_network_logical_interfaces('vmx3', '192.254.0.6', 'ge-0/0/1', 'ge-0/0/1.0')
+    mx_router.del_network_logical_interfaces('vmx3', '192.254.0.6', 'ge-0/0/0', 'ge-0/0/0.1')
+    mx_router.del_network_logical_interfaces('vmx3', '192.254.0.6', 'ge-0/0/0', 'ge-0/0/0.0')
+    mx_router.del_network_physical_interfaces('vmx3', '192.254.0.6', 'ge-0/0/0')
 
 # end main
 

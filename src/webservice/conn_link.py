@@ -20,6 +20,7 @@ from collections import OrderedDict
 from bottle import request, response, post, get, put, delete
 from infra.log import Logger
 from network_element import _ne_dict
+from contrail_infra_client.provision_mxrouters import *
 
 # Logger
 _LOG = Logger("e2_app", __name__, "debug")
@@ -155,6 +156,22 @@ def conn_link_creation_handler():
     _conn_link_dict[name] = conn_link_obj
 
     # Contrail link addition - TODO
+    mx_router = MxRouter(' ')
+    # Add left node interfaces
+    for intf in conn_link_obj.left_links:
+        print "left: " + intf
+        mx_router.add_network_physical_interfaces(left_node_obj.name, left_node_obj.mgmt_ip, intf)
+    # Add right node interfaces
+    for intf in conn_link_obj.right_links:
+        print "right: " + intf
+        mx_router.add_network_physical_interfaces(right_node_obj.name, right_node_obj.mgmt_ip, intf)
+    # fi_left = mx_router.create_fabric_interface(left_node_obj.name)
+    # for intf in conn_link_obj.left_links:
+    #     fi_left.add_interface(intf)
+    # fi_right = mx_router.create_fabric_interface(right_node_obj.name)
+    # for intf in conn_link_obj.right_links:
+    #     fi_right.add_interface(intf)
+    # mx_router.create_fabric_link(fi_left, fi_right)
 
     # return 200 Success
     _LOG.debug("Good, return 200 Success")
