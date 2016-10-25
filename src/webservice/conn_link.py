@@ -41,6 +41,8 @@ class ConnLink(object):
         self.left_links = left_links
         self.right_links = right_links
         self.fabric = fabric
+        self.left_fi_intf = None
+        self.right_fi_intf = None
 
     def json(self):
         tmp_dict = dict()
@@ -155,7 +157,7 @@ def conn_link_creation_handler():
     right_node_obj.add_ref_cnt()
     _conn_link_dict[name] = conn_link_obj
 
-    # Contrail link addition - TODO
+    # Contrail link addition
     mx_router = MxRouter(' ')
     # Add left node interfaces
     for intf in conn_link_obj.left_links:
@@ -165,13 +167,18 @@ def conn_link_creation_handler():
     for intf in conn_link_obj.right_links:
         print "right: " + intf
         mx_router.add_network_physical_interfaces(right_node_obj.name, right_node_obj.mgmt_ip, intf)
-    # fi_left = mx_router.create_fabric_interface(left_node_obj.name)
-    # for intf in conn_link_obj.left_links:
-    #     fi_left.add_interface(intf)
-    # fi_right = mx_router.create_fabric_interface(right_node_obj.name)
-    # for intf in conn_link_obj.right_links:
-    #     fi_right.add_interface(intf)
-    # mx_router.create_fabric_link(fi_left, fi_right)
+
+    # Create Fabric interface - left node
+    fi_left = mx_router.create_fabric_interface(left_node_obj.name, left_node_obj.mgmt_ip)
+    conn_link_obj.left_fi_intf = fi_left
+    mx_router.add_child_intefaces_to_fabric(left_node_obj.name, left_node_obj.mgmt_ip,
+                                            fi_left, conn_link_obj.left_links)
+
+    # Create Fabric interface - right node
+    fi_right =  mx_router.create_fabric_interface(right_node_obj.name, right_node_obj.mgmt_ip)
+    conn_link_obj.right_fi_intf = fi_right
+    mx_router.add_child_intefaces_to_fabric(right_node_obj.name, right_node_obj.mgmt_ip,
+                                            fi_right, conn_link_obj.right_links)
 
     # return 200 Success
     _LOG.debug("Good, return 200 Success")
@@ -221,17 +228,43 @@ def conn_link_delete_handler(name):
 
     # Delete the ref count of each NE object
     try:
-        _ne_dict[conn_link_obj.left_node].del_ref_cnt()
-        _ne_dict[conn_link_obj.right_node].del_ref_cnt()
+        left_node = conn_link_obj.left_node
+        left_node_obj = _ne_dict[left_node]
+        left_node_obj.del_ref_cnt()
+
+        right_node = conn_link_obj.right_node
+        right_node_obj = _ne_dict[right_node]
+        right_node_obj.del_ref_cnt()
     except:
         _LOG.debug("Some thing wrong with NE object ref count decrement")
         response.status = 400
         return
 
-    # Contrail link removal - TODO
+    # Contrail link removal
+    mx_router = MxRouter(' ')
+
+    # Delete Fabric interface - left node
+    mx_router.del_child_intefaces_from_fabric(left_node_obj.name, left_node_obj.mgmt_ip,            \
+                                              conn_link_obj.left_fi_intf, conn_link_obj.left_links)
+    mx_router.delete_fabric_interface(left_node_obj.name, left_node_obj.mgmt_ip, conn_link_obj.left_fi_intf)
+
+    # Delete Fabric interface - right node
+    mx_router.del_child_intefaces_from_fabric(right_node_obj.name, right_node_obj.mgmt_ip,          \
+                                              conn_link_obj.right_fi_intf, conn_link_obj.right_links)
+    mx_router.delete_fabric_interface(right_node_obj.name, right_node_obj.mgmt_ip, conn_link_obj.right_fi_intf)
+
+    # Delete left node interfaces
+    for intf in conn_link_obj.left_links:
+        print "left: " + intf
+        mx_router.del_network_physical_interfaces(left_node_obj.name, left_node_obj.mgmt_ip, intf)
+    # Delete right node interfaces
+    for intf in conn_link_obj.right_links:
+        print "right: " + intf
+        mx_router.del_network_physical_interfaces(right_node_obj.name, right_node_obj.mgmt_ip, intf)
 
     # Delete the conn_link object as well
     del conn_link_obj
+    del _conn_link_dict[name]
 
     _LOG.debug("Good, return 200 Success")
     return
