@@ -13,7 +13,7 @@ import struct
 
 class ROClass(type):
     def __setattr__(self, name, value):
-        raise ValueError("Cannot modify %s"%name)
+        raise ValueError("Cannot modify %s" % name)
 
 class E2Constants(object):
 

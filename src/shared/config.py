@@ -70,7 +70,7 @@ if __name__ == "__main__":
 
     # Initialize E2 Config
     e2config = E2Config()
-    _LOG.debug("%s"%e2config)
+    _LOG.debug("%s" % e2config)
 
     # Test 1 - Assign E2 mode value in E2 Config
     e2config.mode = e2consts.MODE_ADJ_DISCOVER
@@ -80,4 +80,4 @@ if __name__ == "__main__":
         _LOG.debug('E2 mode check failed ')
 
     # Print after E2 mode assignment
-    _LOG.debug("%s"%e2config)
+    _LOG.debug("%s" % e2config)

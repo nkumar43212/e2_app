@@ -31,7 +31,8 @@ class E2ConfigHandler:
     def __init__(self):
         self.e2_cfg = E2Config()
 
-    def mode_check(self, mode):
+    @staticmethod
+    def mode_check(mode):
         if mode not in e2consts.MODE:
             raise argparse.ArgumentTypeError(
                 "E2 mode can only be one of the following:\n" +
@@ -39,7 +40,8 @@ class E2ConfigHandler:
                 "\t" + e2consts.MODE_ADJ_DISCOVER + "\n")
         return mode
 
-    def config_file_check(self, file):
+    @staticmethod
+    def config_file_check(file):
         """
         Function to check if the user supplied configuration file exists or not
         """
@@ -135,7 +137,7 @@ class E2ConfigHandler:
 
             # Parse config file
             err, err_msg = self.config_handle(args.config_file)
-            if False == err:
+            if not err:
                 sys.exit("Config file validation failed " + err_msg)
 
             # Parse stop and status actions

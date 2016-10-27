@@ -37,11 +37,11 @@ if __name__ == "__main__":
         elif sys.platform.startswith('darwin'):
             pass
         else:
-            raise E2StartupException("Platform %s not supported."%sys.platform)
+            raise E2StartupException("Platform %s not supported." % sys.platform)
 
         # Check for supported python version
         if sys.version_info < (2, 7, 0):
-           raise E2StartupException("Python version < 2.7 not supported")
+            raise E2StartupException("Python version < 2.7 not supported")
 
         # Create E2ConfigHandler object to parse config file and input arguments
         config_handler = E2ConfigHandler()
