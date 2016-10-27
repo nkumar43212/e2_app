@@ -41,8 +41,8 @@ class ConnLink(object):
         self.access_links = access_links
         self.service_links = service_links
         self.fabric = fabric
-        self.access_fi_intf = None
-        self.service_fi_intf = None
+        self.access_fab_intf = None
+        self.service_fab_intf = None
 
     def json(self):
         tmp_dict = dict()
@@ -170,13 +170,13 @@ def conn_link_creation_handler():
 
     # Create Fabric interface - access node
     fi_access = mx_router.create_fabric_interface(access_node_obj.name, access_node_obj.mgmt_ip)
-    conn_link_obj.access_fi_intf = fi_access
+    conn_link_obj.access_fab_intf = fi_access
     mx_router.add_child_intefaces_to_fabric(access_node_obj.name, access_node_obj.mgmt_ip,
                                             fi_access, conn_link_obj.access_links)
 
     # Create Fabric interface - service node
     fi_service =  mx_router.create_fabric_interface(service_node_obj.name, service_node_obj.mgmt_ip)
-    conn_link_obj.service_fi_intf = fi_service
+    conn_link_obj.service_fab_intf = fi_service
     mx_router.add_child_intefaces_to_fabric(service_node_obj.name, service_node_obj.mgmt_ip,
                                             fi_service, conn_link_obj.service_links)
 
@@ -245,13 +245,13 @@ def conn_link_delete_handler(name):
 
     # Delete Fabric interface - access node
     mx_router.del_child_intefaces_from_fabric(access_node_obj.name, access_node_obj.mgmt_ip,            \
-                                              conn_link_obj.access_fi_intf, conn_link_obj.access_links)
-    mx_router.delete_fabric_interface(access_node_obj.name, access_node_obj.mgmt_ip, conn_link_obj.access_fi_intf)
+                                              conn_link_obj.access_fab_intf, conn_link_obj.access_links)
+    mx_router.delete_fabric_interface(access_node_obj.name, access_node_obj.mgmt_ip, conn_link_obj.access_fab_intf)
 
     # Delete Fabric interface - service node
     mx_router.del_child_intefaces_from_fabric(service_node_obj.name, service_node_obj.mgmt_ip,          \
-                                              conn_link_obj.service_fi_intf, conn_link_obj.service_links)
-    mx_router.delete_fabric_interface(service_node_obj.name, service_node_obj.mgmt_ip, conn_link_obj.service_fi_intf)
+                                              conn_link_obj.service_fab_intf, conn_link_obj.service_links)
+    mx_router.delete_fabric_interface(service_node_obj.name, service_node_obj.mgmt_ip, conn_link_obj.service_fab_intf)
 
     # Delete access node interfaces
     for intf in conn_link_obj.access_links:
