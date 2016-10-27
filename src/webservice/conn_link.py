@@ -33,24 +33,24 @@ _conn_link_dict = dict()
 
 # Conn Link Class
 class ConnLink(object):
-    def __init__(self, name, left_node, left_links,
-                 right_node, right_links, fabric = None):
+    def __init__(self, name, access_node, access_links,
+                 service_node, service_links, fabric = None):
         self.name = name
-        self.left_node = left_node
-        self.right_node = right_node
-        self.left_links = left_links
-        self.right_links = right_links
+        self.access_node = access_node
+        self.service_node = service_node
+        self.access_links = access_links
+        self.service_links = service_links
         self.fabric = fabric
-        self.left_fi_intf = None
-        self.right_fi_intf = None
+        self.access_fi_intf = None
+        self.service_fi_intf = None
 
     def json(self):
         tmp_dict = dict()
         tmp_dict['name'] = self.name
-        tmp_dict['left_node'] = self.left_node
-        tmp_dict['right_node'] = self.right_node
-        tmp_dict['left_links'] = self.left_links
-        tmp_dict['right_links'] = self.right_links
+        tmp_dict['access_node'] = self.access_node
+        tmp_dict['service_node'] = self.service_node
+        tmp_dict['access_links'] = self.access_links
+        tmp_dict['service_links'] = self.service_links
         tmp_dict['fabric'] = self.fabric
         return tmp_dict
 
@@ -81,28 +81,28 @@ def conn_link_creation_handler():
                 _LOG.exception("Incorrect (key:name) value in data = " + str(data))
                 raise ValueError
             name = data['name']
-            if namepattern.match(data['left_node']) is None:
-                _LOG.exception("Incorrect (key:left_node) value in data = " + str(data))
+            if namepattern.match(data['access_node']) is None:
+                _LOG.exception("Incorrect (key:access_node) value in data = " + str(data))
                 raise ValueError
-            left_node = data['left_node']
-            if namepattern.match(data['right_node']) is None:
-                _LOG.exception("Incorrect (key:right_node) value in data = " + str(data))
+            access_node = data['access_node']
+            if namepattern.match(data['service_node']) is None:
+                _LOG.exception("Incorrect (key:service_node) value in data = " + str(data))
                 raise ValueError
-            right_node = data['right_node']
+            service_node = data['service_node']
             if data['fabric'] is not None:
                 _LOG.exception("Incorrect (key:fabric) value in data = " + str(data))
                 raise ValueError
             fabric = data['fabric']
-            if data['left_links'] is None:
-                _LOG.exception("Incorrect (key:left_links) value in data = " + str(data))
+            if data['access_links'] is None:
+                _LOG.exception("Incorrect (key:access_links) value in data = " + str(data))
                 raise ValueError
-            left_links = data['left_links']
-            if data['right_links'] is None:
-                _LOG.exception("Incorrect (key:right_links) value in data = " + str(data))
+            access_links = data['access_links']
+            if data['service_links'] is None:
+                _LOG.exception("Incorrect (key:service_links) value in data = " + str(data))
                 raise ValueError
-            right_links = data['right_links']
+            service_links = data['service_links']
         except (TypeError, KeyError):
-            _LOG.exception("Missing keys (name, left_node, left_links, right_node, right_links, fabric) in data = " +
+            _LOG.exception("Missing keys (name, access_node, access_links, service_node, service_links, fabric) in data = " +
                            str(data))
             raise ValueError
 
@@ -112,26 +112,26 @@ def conn_link_creation_handler():
             raise KeyError
 
         # Check length
-        if (len(left_links) != len(right_links)) or (len(left_links) == 0):
-            _LOG.exception("Incorrect left_links and right_links value in data = " + str(data))
+        if (len(access_links) != len(service_links)) or (len(access_links) == 0):
+            _LOG.exception("Incorrect access_links and service_links value in data = " + str(data))
             raise ValueError
 
-        # Check for existence - left node
-        if left_node not in _ne_dict.keys():
-            _LOG.exception("left_node does not exist " + name + " in data = " + str(data))
+        # Check for existence - access node
+        if access_node not in _ne_dict.keys():
+            _LOG.exception("access_node does not exist " + name + " in data = " + str(data))
             raise ValueError
         else:
-            ne_left_obj = _ne_dict[left_node]
-            if ne_left_obj.role != "access":
+            ne_access_obj = _ne_dict[access_node]
+            if ne_access_obj.role != "access":
                 raise ValueError
 
-        # Check for existence - right node
-        if right_node not in _ne_dict.keys():
-            _LOG.exception("right_node does not exist " + name + " in data = " + str(data))
+        # Check for existence - service node
+        if service_node not in _ne_dict.keys():
+            _LOG.exception("service_node does not exist " + name + " in data = " + str(data))
             raise ValueError
         else:
-            ne_right_obj = _ne_dict[right_node]
-            if ne_right_obj.role != "service":
+            ne_service_obj = _ne_dict[service_node]
+            if ne_service_obj.role != "service":
                 raise ValueError
 
     except ValueError:
@@ -147,38 +147,38 @@ def conn_link_creation_handler():
         return
 
     # Create Conn Link object
-    conn_link_obj = ConnLink(name, left_node, left_links, right_node, right_links, fabric)
+    conn_link_obj = ConnLink(name, access_node, access_links, service_node, service_links, fabric)
     # print(json.dumps(conn_link_obj, default=jdefault))
 
     # Increment ref counts
-    left_node_obj = _ne_dict[left_node]
-    left_node_obj.add_ref_cnt()
-    right_node_obj = _ne_dict[right_node]
-    right_node_obj.add_ref_cnt()
+    access_node_obj = _ne_dict[access_node]
+    access_node_obj.add_ref_cnt()
+    service_node_obj = _ne_dict[service_node]
+    service_node_obj.add_ref_cnt()
     _conn_link_dict[name] = conn_link_obj
 
     # Contrail link addition
     mx_router = MxRouter(' ')
-    # Add left node interfaces
-    for intf in conn_link_obj.left_links:
-        print "left: " + intf
-        mx_router.add_network_physical_interfaces(left_node_obj.name, left_node_obj.mgmt_ip, intf)
-    # Add right node interfaces
-    for intf in conn_link_obj.right_links:
-        print "right: " + intf
-        mx_router.add_network_physical_interfaces(right_node_obj.name, right_node_obj.mgmt_ip, intf)
+    # Add access node interfaces
+    for intf in conn_link_obj.access_links:
+        print "access: " + intf
+        mx_router.add_network_physical_interfaces(access_node_obj.name, access_node_obj.mgmt_ip, intf)
+    # Add service node interfaces
+    for intf in conn_link_obj.service_links:
+        print "service: " + intf
+        mx_router.add_network_physical_interfaces(service_node_obj.name, service_node_obj.mgmt_ip, intf)
 
-    # Create Fabric interface - left node
-    fi_left = mx_router.create_fabric_interface(left_node_obj.name, left_node_obj.mgmt_ip)
-    conn_link_obj.left_fi_intf = fi_left
-    mx_router.add_child_intefaces_to_fabric(left_node_obj.name, left_node_obj.mgmt_ip,
-                                            fi_left, conn_link_obj.left_links)
+    # Create Fabric interface - access node
+    fi_access = mx_router.create_fabric_interface(access_node_obj.name, access_node_obj.mgmt_ip)
+    conn_link_obj.access_fi_intf = fi_access
+    mx_router.add_child_intefaces_to_fabric(access_node_obj.name, access_node_obj.mgmt_ip,
+                                            fi_access, conn_link_obj.access_links)
 
-    # Create Fabric interface - right node
-    fi_right =  mx_router.create_fabric_interface(right_node_obj.name, right_node_obj.mgmt_ip)
-    conn_link_obj.right_fi_intf = fi_right
-    mx_router.add_child_intefaces_to_fabric(right_node_obj.name, right_node_obj.mgmt_ip,
-                                            fi_right, conn_link_obj.right_links)
+    # Create Fabric interface - service node
+    fi_service =  mx_router.create_fabric_interface(service_node_obj.name, service_node_obj.mgmt_ip)
+    conn_link_obj.service_fi_intf = fi_service
+    mx_router.add_child_intefaces_to_fabric(service_node_obj.name, service_node_obj.mgmt_ip,
+                                            fi_service, conn_link_obj.service_links)
 
     # return 200 Success
     _LOG.debug("Good, return 200 Success")
@@ -228,13 +228,13 @@ def conn_link_delete_handler(name):
 
     # Delete the ref count of each NE object
     try:
-        left_node = conn_link_obj.left_node
-        left_node_obj = _ne_dict[left_node]
-        left_node_obj.del_ref_cnt()
+        access_node = conn_link_obj.access_node
+        access_node_obj = _ne_dict[access_node]
+        access_node_obj.del_ref_cnt()
 
-        right_node = conn_link_obj.right_node
-        right_node_obj = _ne_dict[right_node]
-        right_node_obj.del_ref_cnt()
+        service_node = conn_link_obj.service_node
+        service_node_obj = _ne_dict[service_node]
+        service_node_obj.del_ref_cnt()
     except:
         _LOG.debug("Some thing wrong with NE object ref count decrement")
         response.status = 400
@@ -243,24 +243,24 @@ def conn_link_delete_handler(name):
     # Contrail link removal
     mx_router = MxRouter(' ')
 
-    # Delete Fabric interface - left node
-    mx_router.del_child_intefaces_from_fabric(left_node_obj.name, left_node_obj.mgmt_ip,            \
-                                              conn_link_obj.left_fi_intf, conn_link_obj.left_links)
-    mx_router.delete_fabric_interface(left_node_obj.name, left_node_obj.mgmt_ip, conn_link_obj.left_fi_intf)
+    # Delete Fabric interface - access node
+    mx_router.del_child_intefaces_from_fabric(access_node_obj.name, access_node_obj.mgmt_ip,            \
+                                              conn_link_obj.access_fi_intf, conn_link_obj.access_links)
+    mx_router.delete_fabric_interface(access_node_obj.name, access_node_obj.mgmt_ip, conn_link_obj.access_fi_intf)
 
-    # Delete Fabric interface - right node
-    mx_router.del_child_intefaces_from_fabric(right_node_obj.name, right_node_obj.mgmt_ip,          \
-                                              conn_link_obj.right_fi_intf, conn_link_obj.right_links)
-    mx_router.delete_fabric_interface(right_node_obj.name, right_node_obj.mgmt_ip, conn_link_obj.right_fi_intf)
+    # Delete Fabric interface - service node
+    mx_router.del_child_intefaces_from_fabric(service_node_obj.name, service_node_obj.mgmt_ip,          \
+                                              conn_link_obj.service_fi_intf, conn_link_obj.service_links)
+    mx_router.delete_fabric_interface(service_node_obj.name, service_node_obj.mgmt_ip, conn_link_obj.service_fi_intf)
 
-    # Delete left node interfaces
-    for intf in conn_link_obj.left_links:
-        print "left: " + intf
-        mx_router.del_network_physical_interfaces(left_node_obj.name, left_node_obj.mgmt_ip, intf)
-    # Delete right node interfaces
-    for intf in conn_link_obj.right_links:
-        print "right: " + intf
-        mx_router.del_network_physical_interfaces(right_node_obj.name, right_node_obj.mgmt_ip, intf)
+    # Delete access node interfaces
+    for intf in conn_link_obj.access_links:
+        print "access: " + intf
+        mx_router.del_network_physical_interfaces(access_node_obj.name, access_node_obj.mgmt_ip, intf)
+    # Delete service node interfaces
+    for intf in conn_link_obj.service_links:
+        print "service: " + intf
+        mx_router.del_network_physical_interfaces(service_node_obj.name, service_node_obj.mgmt_ip, intf)
 
     # Delete the conn_link object as well
     del conn_link_obj
