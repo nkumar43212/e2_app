@@ -11,12 +11,13 @@
 # Libraries/Modules
 import os
 import sys
-sys.path.append(os.path.expanduser('../'))
-
 import re
 import json
 import socket
 from collections import OrderedDict
+
+sys.path.append(os.path.expanduser('../'))
+
 from bottle import request, response, post, get, put, delete
 from infra.log import Logger
 from network_element import _ne_dict
@@ -102,8 +103,8 @@ def conn_link_creation_handler():
                 raise ValueError
             service_links = data['service_links']
         except (TypeError, KeyError):
-            _LOG.exception("Missing keys (name, access_node, access_links, service_node, service_links, fabric) in data = " +
-                           str(data))
+            _LOG.exception("Missing keys (name, access_node, access_links, service_node, service_links, fabric) "
+                           "in data = " + str(data))
             raise ValueError
 
         # check for existence
@@ -175,7 +176,7 @@ def conn_link_creation_handler():
                                             fi_access, conn_link_obj.access_links)
 
     # Create Fabric interface - service node
-    fi_service =  mx_router.create_fabric_interface(service_node_obj.name, service_node_obj.mgmt_ip)
+    fi_service = mx_router.create_fabric_interface(service_node_obj.name, service_node_obj.mgmt_ip)
     conn_link_obj.service_fab_intf = fi_service
     mx_router.add_child_intefaces_to_fabric(service_node_obj.name, service_node_obj.mgmt_ip,
                                             fi_service, conn_link_obj.service_links)

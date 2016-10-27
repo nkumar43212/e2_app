@@ -73,7 +73,8 @@ class RootLogger(object):
     def __getattr__(self, attrname):
         return getattr(self.logger, attrname)
 
-    def get_level(self, level):
+    @staticmethod
+    def get_level(level):
         try:
             py_level = str_py_lvl[level.lower()]
         except KeyError:
@@ -126,7 +127,8 @@ class Logger(object):
         root_logger.addHandler(handler)
 
     # Get the logging level set for this module
-    def get_level(self, level):
+    @staticmethod
+    def get_level(level):
         try:
             py_level = str_py_lvl[level.lower()]
         except KeyError:
@@ -158,7 +160,6 @@ if __name__ == "__main__":
                 # Only this values will go in file as info is default level
                 ML3.info("Module 3 test_func i=%d", i)
             time.sleep(1)
-
 
     # Create a root logger for this process
     RL = RootLogger("RL", "debug")

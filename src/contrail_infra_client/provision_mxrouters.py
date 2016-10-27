@@ -33,7 +33,7 @@ class MxRouter(object):
         self._args = None
         self.mxrouters = {}
         self.mxrouters_id = {}
-        if args_str == None:
+        if args_str is None:
             args_str = ' '.join(sys.argv[1:])
         self._parse_args(args_str)
 
@@ -93,7 +93,7 @@ class MxRouter(object):
         ipam_name += name
         try:
             ipam_obj = self._vnc_lib.network_ipam_read(fq_name=[self._args.admin_tenant_name, \
-			    self._args.admin_tenant_project, ipam_name])
+                                                       self._args.admin_tenant_project, ipam_name])
         except NoIdError:
             pass
         if ipam_obj is None:
