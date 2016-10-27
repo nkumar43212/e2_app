@@ -16,162 +16,188 @@ Client Curl Output:
 Host IP = localhost
 Host Port = 10001
 Press [Enter] key to continue or [Ctrl+C] to exit ...
--onnected to localhost (127.0.0.1) port 10001 (#0)
-> POST /network-elements HTTP/1.1
-> Host: localhost:10001
-> User-Agent: curl/7.43.0
-> Accept: */*
-> Content-Type: application/json
-> Cache-Control: no-cache
-> Content-Length: 67
->
-* upload completely sent off: 67 out of 67 bytes
-* HTTP 1.0, assume close after body
-< HTTP/1.0 200 OK
-< Date: Tue, 27 Sep 2016 02:30:42 GMT
-< Server: WSGIServer/0.1 Python/2.7.11
-< Content-Length: 21
-< Content-Type: application/json
-<
-* Closing connection 0
-{"name": "vmxAccess"}
 
+* Hostname was NOT found in DNS cache
+*   Trying ::1...
+* connect to ::1 port 10001 failed: Connection refused
 *   Trying 127.0.0.1...
 * Connected to localhost (127.0.0.1) port 10001 (#0)
 > POST /network-elements HTTP/1.1
+> User-Agent: curl/7.35.0
 > Host: localhost:10001
-> User-Agent: curl/7.43.0
 > Accept: */*
 > Content-Type: application/json
 > Cache-Control: no-cache
-> Content-Length: 69
->
-* upload completely sent off: 69 out of 69 bytes
+> Content-Length: 71
+> 
+* upload completely sent off: 71 out of 71 bytes
 * HTTP 1.0, assume close after body
 < HTTP/1.0 200 OK
-< Date: Tue, 27 Sep 2016 02:30:42 GMT
-< Server: WSGIServer/0.1 Python/2.7.11
-< Content-Length: 22
+< Date: Thu, 27 Oct 2016 23:14:57 GMT
+< Server: WSGIServer/0.1 Python/2.7.6
+< Content-Length: 25
 < Content-Type: application/json
-<
+< 
 * Closing connection 0
-{"name": "vmxService"}
+{"name": "vmxTestAccess"}
 
+* Hostname was NOT found in DNS cache
+*   Trying ::1...
+* connect to ::1 port 10001 failed: Connection refused
+*   Trying 127.0.0.1...
+* Connected to localhost (127.0.0.1) port 10001 (#0)
+> POST /network-elements HTTP/1.1
+> User-Agent: curl/7.35.0
+> Host: localhost:10001
+> Accept: */*
+> Content-Type: application/json
+> Cache-Control: no-cache
+> Content-Length: 73
+> 
+* upload completely sent off: 73 out of 73 bytes
+* HTTP 1.0, assume close after body
+< HTTP/1.0 200 OK
+< Date: Thu, 27 Oct 2016 23:14:57 GMT
+< Server: WSGIServer/0.1 Python/2.7.6
+< Content-Length: 26
+< Content-Type: application/json
+< 
+* Closing connection 0
+{"name": "vmxTestService"}
+
+* Hostname was NOT found in DNS cache
+*   Trying ::1...
+* connect to ::1 port 10001 failed: Connection refused
 *   Trying 127.0.0.1...
 * Connected to localhost (127.0.0.1) port 10001 (#0)
 > POST /conn-links HTTP/1.1
+> User-Agent: curl/7.35.0
 > Host: localhost:10001
-> User-Agent: curl/7.43.0
 > Accept: */*
 > Content-Type: application/json
 > Cache-Control: no-cache
-> Content-Length: 172
->
-* upload completely sent off: 172 out of 172 bytes
+> Content-Length: 188
+> 
+* upload completely sent off: 188 out of 188 bytes
 * HTTP 1.0, assume close after body
 < HTTP/1.0 200 OK
-< Date: Tue, 27 Sep 2016 02:30:42 GMT
-< Server: WSGIServer/0.1 Python/2.7.11
+< Date: Thu, 27 Oct 2016 23:14:57 GMT
+< Server: WSGIServer/0.1 Python/2.7.6
 < Content-Length: 20
 < Content-Type: application/json
-<
+< 
 * Closing connection 0
 {"name": "conn-one"}
 
+* Hostname was NOT found in DNS cache
+*   Trying ::1...
+* connect to ::1 port 10001 failed: Connection refused
 *   Trying 127.0.0.1...
 * Connected to localhost (127.0.0.1) port 10001 (#0)
 > GET /network-elements HTTP/1.1
+> User-Agent: curl/7.35.0
 > Host: localhost:10001
-> User-Agent: curl/7.43.0
 > Accept: */*
 > Content-Type: application/json
 > Cache-Control: no-cache
->
+> 
 * HTTP 1.0, assume close after body
 < HTTP/1.0 200 OK
-< Date: Tue, 27 Sep 2016 02:30:42 GMT
-< Server: WSGIServer/0.1 Python/2.7.11
-< Content-Length: 278
+< Date: Thu, 27 Oct 2016 23:14:57 GMT
+< Server: WSGIServer/0.1 Python/2.7.6
+< Content-Length: 826
 < Content-Type: application/json
 < Cache-Control: no-cache
-<
+< 
 * Closing connection 0
-{"network-elements": [{"username": "root", "name": "vmxService", "mgmt_ip": "169.254.0.20", "ref_cnt": 1, "role": "service", "password": "Embe1mpls"}, {"username": "root", "name": "vmxAccess", "mgmt_ip": "169.254.0.22", "ref_cnt": 1, "role": "access", "password": "Embe1mpls"}]}
+{"network-elements": [{"username": "root", "name": "vmxTestService", "mgmt_ip": "169.254.0.20", "ref_cnt": 1, "role": "service", "password": "Embe1mpls"}, {"username": "root", "name": "vmxTestAccess", "mgmt_ip": "169.254.0.22", "ref_cnt": 1, "role": "access", "password": "Embe1mpls"}, {"username": "root", "name": "vmxAbbasService02", "mgmt_ip": "169.254.0.22", "ref_cnt": 0, "role": "service", "password": "Embe1mpls"}, {"username": "root", "name": "vmxAbbasService03", "mgmt_ip": "169.254.0.23", "ref_cnt": 0, "role": "service", "password": "Embe1mpls"}, {"username": "root", "name": "vmxAbbasService01", "mgmt_ip": "169.254.0.20", "ref_cnt": 0, "role": "service", "password": "Embe1mpls"}, {"username": "root", "name": "vmxAbbasAccess", "mgmt_ip": "169.254.0.22", "ref_cnt": 0, "role": "access", "password": "Embe1mpls"}]}
 
+* Hostname was NOT found in DNS cache
+*   Trying ::1...
+* connect to ::1 port 10001 failed: Connection refused
 *   Trying 127.0.0.1...
 * Connected to localhost (127.0.0.1) port 10001 (#0)
 > GET /conn-links HTTP/1.1
+> User-Agent: curl/7.35.0
 > Host: localhost:10001
-> User-Agent: curl/7.43.0
 > Accept: */*
 > Referer: rbose
 > Content-Type: application/json
 > Cache-Control: no-cache
->
+> 
 * HTTP 1.0, assume close after body
 < HTTP/1.0 200 OK
-< Date: Tue, 27 Sep 2016 02:30:42 GMT
-< Server: WSGIServer/0.1 Python/2.7.11
-< Content-Length: 189
+< Date: Thu, 27 Oct 2016 23:14:57 GMT
+< Server: WSGIServer/0.1 Python/2.7.6
+< Content-Length: 258
 < Content-Type: application/json
 < Cache-Control: no-cache
-<
+< 
 * Closing connection 0
-{"conn-links": [{"right_links": ["ge-1/0/1", "ge-2/0/2"], "fabric": null, "right_node": "vmxService", "left_node": "vmxAccess", "left_links": ["ge-0/0/1", "ge-0/0/2"], "name": "conn-one"}]}
+{"conn-links": [{"name": "conn-one", "service_fab_intf": "fi1", "access_fab_intf": "fi0", "access_links": ["ge-0/0/1", "ge-0/0/2"], "access_node": "vmxTestAccess", "service_links": ["ge-1/0/1", "ge-2/0/2"], "service_node": "vmxTestService", "fabric": null}]}
 
+* Hostname was NOT found in DNS cache
+*   Trying ::1...
+* connect to ::1 port 10001 failed: Connection refused
 *   Trying 127.0.0.1...
 * Connected to localhost (127.0.0.1) port 10001 (#0)
 > DELETE /conn-links/conn-one HTTP/1.1
+> User-Agent: curl/7.35.0
 > Host: localhost:10001
-> User-Agent: curl/7.43.0
 > Accept: */*
 > Content-Type: application/json
 > Cache-Control: no-cache
->
+> 
 * HTTP 1.0, assume close after body
 < HTTP/1.0 200 OK
-< Date: Tue, 27 Sep 2016 02:30:42 GMT
-< Server: WSGIServer/0.1 Python/2.7.11
+< Date: Thu, 27 Oct 2016 23:14:58 GMT
+< Server: WSGIServer/0.1 Python/2.7.6
 < Content-Length: 0
 < Content-Type: text/html; charset=UTF-8
-<
+< 
 * Closing connection 0
 
 
+* Hostname was NOT found in DNS cache
+*   Trying ::1...
+* connect to ::1 port 10001 failed: Connection refused
 *   Trying 127.0.0.1...
 * Connected to localhost (127.0.0.1) port 10001 (#0)
-> DELETE /network-elements/vmxAccess HTTP/1.1
+> DELETE /network-elements/vmxTestAccess HTTP/1.1
+> User-Agent: curl/7.35.0
 > Host: localhost:10001
-> User-Agent: curl/7.43.0
 > Accept: */*
 > Content-Type: application/json
 > Cache-Control: no-cache
->
+> 
 * HTTP 1.0, assume close after body
 < HTTP/1.0 200 OK
-< Date: Tue, 27 Sep 2016 02:30:42 GMT
-< Server: WSGIServer/0.1 Python/2.7.11
+< Date: Thu, 27 Oct 2016 23:14:58 GMT
+< Server: WSGIServer/0.1 Python/2.7.6
 < Content-Length: 0
 < Content-Type: text/html; charset=UTF-8
-<
+< 
 * Closing connection 0
 
 
+* Hostname was NOT found in DNS cache
+*   Trying ::1...
+* connect to ::1 port 10001 failed: Connection refused
 *   Trying 127.0.0.1...
 * Connected to localhost (127.0.0.1) port 10001 (#0)
-> DELETE /network-elements/vmxService HTTP/1.1
+> DELETE /network-elements/vmxTestService HTTP/1.1
+> User-Agent: curl/7.35.0
 > Host: localhost:10001
-> User-Agent: curl/7.43.0
 > Accept: */*
 > Content-Type: application/json
 > Cache-Control: no-cache
->
+> 
 * HTTP 1.0, assume close after body
 < HTTP/1.0 200 OK
-< Date: Tue, 27 Sep 2016 02:30:42 GMT
-< Server: WSGIServer/0.1 Python/2.7.11
+< Date: Thu, 27 Oct 2016 23:14:58 GMT
+< Server: WSGIServer/0.1 Python/2.7.6
 < Content-Length: 0
 < Content-Type: text/html; charset=UTF-8
-<
+< 
 * Closing connection 0
 
