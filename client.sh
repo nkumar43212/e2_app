@@ -23,15 +23,15 @@ pause 'Press [Enter] key to continue or [Ctrl+C] to exit ...'
 echo ''
 
 # Create access node
-curl --verbose -X POST -H "Content-Type: application/json" -H "Cache-Control: no-cache" -d '{ "name":"vmxAccess", "mgmt_ip": "169.254.0.22", "role": "access" }' "http://${host_ip}:${host_port}/network-elements"
+curl --verbose -X POST -H "Content-Type: application/json" -H "Cache-Control: no-cache" -d '{ "name":"vmxTestAccess", "mgmt_ip": "169.254.0.22", "role": "access" }' "http://${host_ip}:${host_port}/network-elements"
 echo; echo
 
 # Create service node
-curl --verbose -X POST -H "Content-Type: application/json" -H "Cache-Control: no-cache" -d '{ "name":"vmxService", "mgmt_ip": "169.254.0.20", "role": "service" }' "http://${host_ip}:${host_port}/network-elements"
+curl --verbose -X POST -H "Content-Type: application/json" -H "Cache-Control: no-cache" -d '{ "name":"vmxTestService", "mgmt_ip": "169.254.0.20", "role": "service" }' "http://${host_ip}:${host_port}/network-elements"
 echo; echo
 
 # Create conn-link
-curl --verbose -X POST -H "Content-Type: application/json" -H "Cache-Control: no-cache" -d '{ "name":"conn-one", "left_node": "vmxAccess", "left_links": ["ge-0/0/1", "ge-0/0/2"], "right_node": "vmxService", "right_links": ["ge-1/0/1", "ge-2/0/2"], "fabric": null }' "http://${host_ip}:${host_port}/conn-links"
+curl --verbose -X POST -H "Content-Type: application/json" -H "Cache-Control: no-cache" -d '{ "name":"conn-one", "access_node": "vmxTestAccess", "access_links": ["ge-0/0/1", "ge-0/0/2"], "service_node": "vmxTestService", "service_links": ["ge-1/0/1", "ge-2/0/2"], "fabric": null }' "http://${host_ip}:${host_port}/conn-links"
 echo; echo
 
 # Get all nodes
@@ -47,10 +47,10 @@ curl --verbose -X DELETE -H "Content-Type: application/json" -H "Cache-Control: 
 echo; echo
 
 # Remove access-node
-curl --verbose -X DELETE -H "Content-Type: application/json" -H "Cache-Control: no-cache" "http://${host_ip}:${host_port}/network-elements/vmxAccess"
+curl --verbose -X DELETE -H "Content-Type: application/json" -H "Cache-Control: no-cache" "http://${host_ip}:${host_port}/network-elements/vmxTestAccess"
 echo; echo
 
 # Remove service-node
-curl --verbose -X DELETE -H "Content-Type: application/json" -H "Cache-Control: no-cache" "http://${host_ip}:${host_port}/network-elements/vmxService"
+curl --verbose -X DELETE -H "Content-Type: application/json" -H "Cache-Control: no-cache" "http://${host_ip}:${host_port}/network-elements/vmxTestService"
 echo; echo
 
