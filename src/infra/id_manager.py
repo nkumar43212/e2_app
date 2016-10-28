@@ -5,7 +5,7 @@
 #
 # Author (Abbas Sakarwala - abbas@juniper.net)
 #
-# This module defines some basic util functions
+# This module is a simple unique id allocator class
 #
 
 # Libraries/Modules
