@@ -21,6 +21,7 @@ sys.path.append(os.path.expanduser('../'))
 from bottle import request, response, post, get, put, delete
 from infra.log import Logger
 from network_element import _ne_dict
+from contrail_infra_client.mxrouter import mx_router
 from contrail_infra_client.provision_mxrouters import *
 
 # Logger
@@ -159,7 +160,6 @@ def conn_link_creation_handler():
     _conn_link_dict[name] = conn_link_obj
 
     # Contrail link addition
-    mx_router = MxRouter(' ')
     # Add access node interfaces
     for intf in conn_link_obj.access_links:
         print "access: " + intf
@@ -242,8 +242,6 @@ def conn_link_delete_handler(name):
         return
 
     # Contrail link removal
-    mx_router = MxRouter(' ')
-
     # Delete Fabric interface - access node
     mx_router.del_child_intefaces_from_fabric(access_node_obj.name, access_node_obj.mgmt_ip,            \
                                               conn_link_obj.access_fab_intf, conn_link_obj.access_links)
