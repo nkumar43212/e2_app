@@ -184,7 +184,7 @@ def services_listing_handler():
         # tmp_list.append(value.json()) --- works well
         tmp_list.append(value.__dict__)
     _LOG.debug("Good, return 200 Success")
-    return json.dumps({"conn-links": tmp_list})
+    return json.dumps({"services": tmp_list})
 
 
 '''
