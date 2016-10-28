@@ -116,7 +116,7 @@ class Logger(object):
         handler = logging.handlers.RotatingFileHandler(
             fname, maxBytes=max_size, backupCount=max_backups)
         # Change the handler in the root logger so that all module
-        # loggers are affectted too.
+        # loggers are affected too.
         root_logger = logging.getLogger(self.root_name)
         # Reset the formatter in case the previous handler was syslog
         formatter = logging.Formatter(format)

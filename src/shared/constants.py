@@ -37,7 +37,7 @@ class E2Constants(object):
     # E2 mode
     MODE_ADJ_API = 'Adj_Api'
     MODE_ADJ_DISCOVER = 'Adj_Discover'
-    MODE = set([MODE_ADJ_API, MODE_ADJ_DISCOVER])
+    MODE = {MODE_ADJ_API, MODE_ADJ_DISCOVER}
 
     # Error codes
     SUCCESS = 0

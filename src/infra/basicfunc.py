@@ -20,7 +20,7 @@ def valid_ip(address):
     except:
         return False
 
-# Json convertor
+# Json converter
 def jdefault(o):
     if isinstance(o, set):
         return list(o)
