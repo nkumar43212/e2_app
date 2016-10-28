@@ -20,6 +20,7 @@ sys.path.append(os.path.expanduser('../'))
 
 from bottle import request, response, post, get, put, delete
 from infra.log import Logger
+from infra.basicfunc import *
 from network_element import _ne_dict
 from conn_link import _conn_link_dict
 from contrail_infra_client.provision_mxrouters import *
@@ -83,7 +84,7 @@ def services_creation_handler():
                 _LOG.exception("Incorrect (key:access_node) value in data = " + str(data))
                 raise ValueError
             access_node = data['access_node']
-            if namepattern.match(data['access_port']) is None:
+            if data['access_port'] is None:
                 _LOG.exception("Incorrect (key:access_port) value in data = " + str(data))
                 raise ValueError
             access_port = data['access_port']
@@ -129,14 +130,13 @@ def services_creation_handler():
         # Check for existence - connection between access and service --- TODO
         found_conn = False
         conn_link_obj = None
-        for cl_obj in _conn_link_dict.itervalues() and not found_conn:
-            print cl_obj
-            if cl_obj.access_node == access_node && cl_obj.service_node == service_node:
-                _LOG.debug("Connection link is validated between" + access_node + " and " + service_node)
+        for cl_obj in _conn_link_dict.itervalues():
+            if cl_obj.access_node == access_node and cl_obj.service_node == service_node:
+                _LOG.debug("Connection link exist between " + access_node + " and " + service_node)
                 conn_link_obj = conn_link_obj
                 found_conn = True
         if not found_conn:
-            _LOG.debug("NO Connection link is validated between" + access_node + " and " + service_node)
+            _LOG.debug("NO Connection link found between " + access_node + " and " + service_node)
             raise ValueError
 
     except ValueError:
@@ -153,7 +153,7 @@ def services_creation_handler():
 
     # Create Service object
     service_obj = Services(name, access_node, access_port, access_vlan, service_node)
-    print(json.dumps(service_node_obj, default=jdefault))
+    # print(json.dumps(service_obj, default=jdefault))
 
     # Increment ref counts
     # ne_access_obj = _ne_dict[access_node]
