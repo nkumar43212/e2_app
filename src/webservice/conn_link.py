@@ -45,6 +45,7 @@ class ConnLink(object):
         self.fabric = fabric
         self.access_fab_intf = None
         self.service_fab_intf = None
+        self.ref_cnt = 0
 
     def json(self):
         tmp_dict = dict()
@@ -55,6 +56,18 @@ class ConnLink(object):
         tmp_dict['service_links'] = self.service_links
         tmp_dict['fabric'] = self.fabric
         return tmp_dict
+
+    def add_ref_cnt(self):
+        self.ref_cnt += 1
+
+    def del_ref_cnt(self):
+        try:
+            if self.ref_cnt == 0:
+                raise Exception
+            else:
+                self.ref_cnt -= 1
+        except:
+            _LOG.exception("Cannot decrement zero value ref_cnt")
 
 #######################################################################
 
@@ -220,6 +233,9 @@ def conn_link_delete_handler(name):
             _LOG.exception("Conn Link " + name + " not present")
             raise KeyError
         conn_link_obj = _conn_link_dict[name]
+        if conn_link.ref_cnt != 0:
+            _LOG.debug("Conn Link " + name + " still referenced")
+            raise ValueError
     except KeyError:
         response.status = 404
         return

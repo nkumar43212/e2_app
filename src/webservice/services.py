@@ -23,6 +23,7 @@ from infra.log import Logger
 from infra.basicfunc import *
 from network_element import _ne_dict
 from conn_link import _conn_link_dict
+from contrail_infra_client.mxrouter import mx_router
 from contrail_infra_client.provision_mxrouters import *
 
 # Logger
@@ -133,7 +134,7 @@ def services_creation_handler():
         for cl_obj in _conn_link_dict.itervalues():
             if cl_obj.access_node == access_node and cl_obj.service_node == service_node:
                 _LOG.debug("Connection link exist between " + access_node + " and " + service_node)
-                conn_link_obj = conn_link_obj
+                conn_link_obj = cl_obj
                 found_conn = True
         if not found_conn:
             _LOG.debug("NO Connection link found between " + access_node + " and " + service_node)
@@ -155,14 +156,18 @@ def services_creation_handler():
     service_obj = Services(name, access_node, access_port, access_vlan, service_node)
     # print(json.dumps(service_obj, default=jdefault))
 
-    # Increment ref counts
-    # ne_access_obj = _ne_dict[access_node]
-    # ne_access_obj.add_ref_cnt()
-    # ne_service_obj = _ne_dict[service_node]
-    # ne_service_obj.add_ref_cnt()
+    # Increment service ref counts
+    conn_link_obj.add_ref_cnt()
     _services_dict[name] = service_obj
 
     # Contrail service addition
+    service_vlans = []
+    service_vlans.append(access_vlan)
+    # access_setup = mx_router.addService(ne_access_obj.name, ne_access_obj.mgmt_ip, ne_access_obj.role, access_port,
+    #                                     conn_link_obj.access_fab_intf, service_vlans, '1.1.1.1/32')
+    # service_setup = mx_router.addService(ne_service_obj.name, ne_service_obj.mgmt_ip, ne_service_obj.role,
+    #                                     conn_link_obj.service_fab_intf, 'ps0', service_vlans, '2.2.2.2/32')
+    # mx_router.activateService(ne_access_obj.name, ne_service_obj.name)
 
     # return 200 Success
     _LOG.debug("Good, return 200 Success")

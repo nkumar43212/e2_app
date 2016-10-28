@@ -130,6 +130,11 @@ def ne_creation_handler():
     # Create in Contrail --- TODO REVISIT --- Check for error condition as well
     mx_router.add_network_element(name, mgmt_ip)
 
+    # Add default loopback interface
+    mx_router.add_network_physical_interfaces(name, mgmt_ip, 'lo0')
+
+    # Generate a unique ip address --- TODO
+
     # return 200 Success
     _LOG.debug("Good, return 200 Success")
     response.headers['Content-Type'] = 'application/json'
@@ -176,6 +181,11 @@ def ne_delete_handler(name):
     except ValueError:
         response.status = 400
         return
+
+    # Release a unique ip address --- TODO
+
+    # Delete default loopback interface
+    mx_router.del_network_physical_interfaces(name, ne_obj.mgmt_ip, 'lo0')
 
     # Delete in Contrail --- TODO REVISIT --- Check for error condition as well
     mx_router.delete_network_element(name)
