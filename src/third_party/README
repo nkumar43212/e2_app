@@ -11,5 +11,9 @@ Lukasa committed on GitHub a day ago
 
 https://pypi.python.org/pypi/jsonschema
 
-3. xxx
+3. functools32
 
+Required by jsonschema.
+https://pypi.python.org/pypi/functools32#downloads
+
+4. 
