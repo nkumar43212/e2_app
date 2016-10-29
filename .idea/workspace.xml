@@ -5,46 +5,6 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="a972d2a2-da35-4749-a5a9-419714af5d7c" name="Default" comment="">
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/src/third_party/functools32/__init__.py" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/src/third_party/functools32/_dummy_thread32.py" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/src/third_party/functools32/functools32.py" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/src/third_party/functools32/reprlib32.py" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/src/third_party/functools32_3_2_3-2/ChangeLog" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/src/third_party/functools32_3_2_3-2/LICENSE" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/src/third_party/functools32_3_2_3-2/MANIFEST.in" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/src/third_party/functools32_3_2_3-2/PKG-INFO" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/src/third_party/functools32_3_2_3-2/functools32/__init__.py" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/src/third_party/functools32_3_2_3-2/functools32/_dummy_thread32.py" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/src/third_party/functools32_3_2_3-2/functools32/functools32.py" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/src/third_party/functools32_3_2_3-2/functools32/reprlib32.py" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/src/third_party/functools32_3_2_3-2/setup.cfg" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/src/third_party/functools32_3_2_3-2/setup.py" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/src/third_party/functools32_3_2_3-2/test_functools32.py" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/src/third_party/functools32_3_2_3-2/test_support27.py" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/src/third_party/jsonschema/__init__.py" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/src/third_party/jsonschema/__main__.py" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/src/third_party/jsonschema/_format.py" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/src/third_party/jsonschema/_reflect.py" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/src/third_party/jsonschema/_utils.py" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/src/third_party/jsonschema/_validators.py" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/src/third_party/jsonschema/_version.py" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/src/third_party/jsonschema/cli.py" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/src/third_party/jsonschema/compat.py" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/src/third_party/jsonschema/exceptions.py" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/src/third_party/jsonschema/schemas/draft3.json" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/src/third_party/jsonschema/schemas/draft4.json" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/src/third_party/jsonschema/tests/__init__.py" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/src/third_party/jsonschema/tests/compat.py" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/src/third_party/jsonschema/tests/test_cli.py" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/src/third_party/jsonschema/tests/test_exceptions.py" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/src/third_party/jsonschema/tests/test_format.py" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/src/third_party/jsonschema/tests/test_jsonschema_test_suite.py" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/src/third_party/jsonschema/tests/test_validators.py" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/src/third_party/jsonschema/validators.py" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/src/vlan_autosense/vlan_service_db.json" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/workspace.xml" afterPath="$PROJECT_DIR$/.idea/workspace.xml" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/src/third_party/README" afterPath="$PROJECT_DIR$/src/third_party/README" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/src/vlan_autosense/vlan_authentication.py" afterPath="$PROJECT_DIR$/src/vlan_autosense/vlan_authentication.py" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/src/webservice/network_element.py" afterPath="$PROJECT_DIR$/src/webservice/network_element.py" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/src/webservice/show_topo.py" afterPath="$PROJECT_DIR$/src/webservice/show_topo.py" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/src/webservice/web_rest_api.py" afterPath="$PROJECT_DIR$/src/webservice/web_rest_api.py" />
@@ -753,9 +713,9 @@
   </component>
   <component name="ToolWindowManager">
     <frame x="40" y="23" width="1400" height="831" extended-state="0" />
-    <editor active="true" />
+    <editor active="false" />
     <layout>
-      <window_info id="Project" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.24945612" sideWeight="0.4832636" order="0" side_tool="false" content_ui="combo" />
+      <window_info id="Project" active="true" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.24945612" sideWeight="0.4832636" order="0" side_tool="false" content_ui="combo" />
       <window_info id="TODO" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.32959327" sideWeight="0.4858593" order="6" side_tool="false" content_ui="tabs" />
       <window_info id="Event Log" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.32959327" sideWeight="0.5373459" order="7" side_tool="true" content_ui="tabs" />
       <window_info id="Inspection Results" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.32959327" sideWeight="0.51414067" order="-1" side_tool="false" content_ui="tabs" />

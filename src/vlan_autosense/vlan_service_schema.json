@@ -1,0 +1,42 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "object",
+  "properties": {
+    "VlanServiceDB": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "serviceName": {
+            "type": "string"
+          },
+          "accessNode": {
+            "type": "string"
+          },
+          "accessPort": {
+            "type": "string"
+          },
+          "accessVlanMin": {
+            "type": "integer"
+          },
+          "accessVlanMax": {
+            "type": "integer"
+          },
+          "serviceNode": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "serviceName",
+          "accessNode",
+          "accessPort",
+          "accessVlanMin"
+        ]
+      }
+    }
+  },
+  "required": [
+    "VlanServiceDB"
+  ]
+}
+
