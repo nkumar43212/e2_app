@@ -165,7 +165,7 @@ def conn_link_creation_handler():
     conn_link_obj = ConnLink(name, access_node, access_links, service_node, service_links, fabric)
     # print(json.dumps(conn_link_obj, default=jdefault))
 
-    # Increment ref counts
+    # Increment ref count of each NE objects
     access_node_obj = _ne_dict[access_node]
     access_node_obj.add_ref_cnt()
     service_node_obj = _ne_dict[service_node]
@@ -243,7 +243,7 @@ def conn_link_delete_handler(name):
         response.status = 400
         return
 
-    # Delete the ref count of each NE object
+    # Decrement ref count of each NE objects
     try:
         access_node = conn_link_obj.access_node
         access_node_obj = _ne_dict[access_node]
