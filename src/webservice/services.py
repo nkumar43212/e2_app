@@ -128,7 +128,7 @@ def services_creation_handler():
             if ne_service_obj.role != "service":
                 raise ValueError
 
-        # Check for existence - connection between access and service --- TODO
+        # Check for existence - connection between access and service
         found_conn = False
         conn_link_obj = None
         for cl_obj in _conn_link_dict.itervalues():
@@ -156,18 +156,16 @@ def services_creation_handler():
     service_obj = Services(name, access_node, access_port, access_vlan, service_node)
     # print(json.dumps(service_obj, default=jdefault))
 
-    # Increment service ref counts
+    # Increment service ref count
     conn_link_obj.add_ref_cnt()
     _services_dict[name] = service_obj
 
     # Contrail service addition
-    service_vlans = []
-    service_vlans.append(access_vlan)
-    # access_setup = mx_router.addService(ne_access_obj.name, ne_access_obj.mgmt_ip, ne_access_obj.role, access_port,
-    #                                     conn_link_obj.access_fab_intf, service_vlans, '1.1.1.1/32')
-    # service_setup = mx_router.addService(ne_service_obj.name, ne_service_obj.mgmt_ip, ne_service_obj.role,
-    #                                     conn_link_obj.service_fab_intf, 'ps0', service_vlans, '2.2.2.2/32')
-    # mx_router.activateService(ne_access_obj.name, ne_service_obj.name)
+    vlan_list = []
+    vlan_list.append(access_vlan)
+    mx_router.addService(ne_access_obj.name, ne_access_obj.mgmt_ip, ne_access_obj.router_id,
+                         access_port, vlan_list,
+                         ne_service_obj.name, ne_service_obj.mgmt_ip, ne_service_obj.router_id)
 
     # return 200 Success
     _LOG.debug("Good, return 200 Success")
@@ -206,7 +204,7 @@ def services_delete_handler(name):
         if name not in _services_dict.keys():
             _LOG.exception("Services " + name + " not present")
             raise KeyError
-        services_obj = _services_dict[name]
+        service_obj = _services_dict[name]
     except KeyError:
         response.status = 404
         return
@@ -214,15 +212,40 @@ def services_delete_handler(name):
         response.status = 400
         return
 
-    # Delete the ref count of each NE object
     try:
-        access_node = services_obj.access_node
+        # Get all NE objects
+        access_node = service_obj.access_node
         ne_access_obj = _ne_dict[access_node]
-        ne_access_obj.del_ref_cnt()
 
-        service_node = services_obj.service_node
+        service_node = service_obj.service_node
         ne_service_obj = _ne_dict[service_node]
-        ne_service_obj.del_ref_cnt()
+
+        # Get conn_link obj
+        found_conn = False
+        conn_link_obj = None
+        for cl_obj in _conn_link_dict.itervalues():
+            if cl_obj.access_node == access_node and cl_obj.service_node == service_node:
+                _LOG.debug("Connection link exist between " + access_node + " and " + service_node)
+                conn_link_obj = cl_obj
+                found_conn = True
+        if not found_conn:
+            _LOG.debug("NO Connection link found between " + access_node + " and " + service_node)
+            raise ValueError
+
+        # Delete the service
+        vlan_list = []
+        vlan_list.append(service_obj.access_vlan)
+        mx_router.delService(ne_access_obj.name, ne_access_obj.mgmt_ip, ne_access_obj.router_id,
+                             service_obj.access_port, vlan_list,
+                             ne_service_obj.name, ne_service_obj.mgmt_ip, ne_service_obj.router_id)
+
+        # Decrement service ref count
+        conn_link_obj.del_ref_cnt()
+
+        # Delete the service object as well
+        del service_obj
+        del _services_dict[name]
+
     except:
         _LOG.debug("Some thing wrong with NE object ref count decrement")
         response.status = 400
