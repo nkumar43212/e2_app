@@ -233,7 +233,7 @@ def conn_link_delete_handler(name):
             _LOG.exception("Conn Link " + name + " not present")
             raise KeyError
         conn_link_obj = _conn_link_dict[name]
-        if conn_link.ref_cnt != 0:
+        if conn_link_obj.ref_cnt != 0:
             _LOG.debug("Conn Link " + name + " still referenced")
             raise ValueError
     except KeyError:
