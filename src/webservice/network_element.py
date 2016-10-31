@@ -18,6 +18,7 @@ import json
 from infra.basicfunc import *
 from collections import OrderedDict
 from bottle import request, response, post, get, put, delete
+import infra.id_manager as id_manager
 from infra.log import Logger
 from contrail_infra_client.mxrouter import mx_router
 from contrail_infra_client.provision_mxrouters import *
@@ -28,6 +29,26 @@ _LOG = Logger("e2_app", __name__, "debug")
 # Dict of NE (key=name, value=NE obj)
 _ne_dict = dict()
 
+# RouterId manager
+class RouterId:
+    def __init__(self):
+        # 254 Ids
+        self.idm = id_manager.IdManager(254)
+
+    def getRouterId(self):
+        id = self.idm.get_id()
+        id_str = str(id)
+        router_id = '{}.{}.{}.{}'.format(id_str, id_str, id_str, id_str)
+        return router_id
+
+    def freeRouterId(self, router_id):
+        s = router_id.split(".")
+        id = int(s[0])
+        self.idm.free_id(id)
+
+# Global routerId generator
+routerId = RouterId()
+
 # Pattern match
 namepattern = re.compile(r'^[a-zA-Z\d-]{1,64}$')
 ippattern = re.compile("\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}")
@@ -37,19 +58,22 @@ role_types = ["access", "service"]
 
 # Network Element Class
 class NetworkElement(object):
-    def __init__(self, name, mgmt_ip, role,
+    def __init__(self, name, mgmt_ip, role, router_id,          \
                  username='root', password='Embe1mpls'):
         self.name = name
         self.mgmt_ip = mgmt_ip
         self.role = role
-        self.username = username
-        self.password = password
+        self.router_id = router_id
+        # self.username = username
+        # self.password = password
         self.ref_cnt = 0
 
     def json(self):
         tmp_dict = dict()
         tmp_dict['name'] = self.name
         tmp_dict['mgmt_ip'] = self.mgmt_ip
+        tmp_dict['role'] = self.role
+        tmp_dict['router_id'] = self.router_id
         return tmp_dict
 
     def add_ref_cnt(self):
@@ -122,8 +146,11 @@ def ne_creation_handler():
         response.status = 409
         return
 
+    # Generate a unique ip address
+    router_id = routerId.getRouterId()
+
     # Create NE object
-    ne_obj = NetworkElement(name, mgmt_ip, role)
+    ne_obj = NetworkElement(name, mgmt_ip, role, router_id)
     # print(json.dumps(ne_obj, default=jdefault))
     _ne_dict[name] = ne_obj
 
@@ -132,8 +159,6 @@ def ne_creation_handler():
 
     # Add default loopback interface
     mx_router.add_network_physical_interfaces(name, mgmt_ip, 'lo0')
-
-    # Generate a unique ip address --- TODO
 
     # return 200 Success
     _LOG.debug("Good, return 200 Success")
@@ -182,7 +207,8 @@ def ne_delete_handler(name):
         response.status = 400
         return
 
-    # Release a unique ip address --- TODO
+    # Release a unique ip address
+    routerId.freeRouterId(ne_obj.router_id)
 
     # Delete default loopback interface
     mx_router.del_network_physical_interfaces(name, ne_obj.mgmt_ip, 'lo0')
