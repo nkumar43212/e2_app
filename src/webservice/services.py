@@ -160,6 +160,9 @@ def services_creation_handler():
     conn_link_obj.add_ref_cnt()
     _services_dict[name] = service_obj
 
+    # Create access physical interface
+    mx_router.add_network_physical_interfaces(ne_access_obj.name, ne_access_obj.mgmt_ip, access_port)
+
     # Contrail service addition
     vlan_list = []
     vlan_list.append(access_vlan)
