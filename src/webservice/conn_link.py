@@ -185,12 +185,12 @@ def conn_link_creation_handler():
     # Create Fabric interface - access node
     fi_access = mx_router.create_fabric_interface(access_node_obj.name)
     conn_link_obj.access_fab_intf = fi_access
-    mx_router.add_child_intefaces_to_fabric(access_node_obj.name, fi_access, conn_link_obj.access_links)
+    mx_router.add_child_interfaces_to_fabric(access_node_obj.name, fi_access, conn_link_obj.access_links)
 
     # Create Fabric interface - service node
     fi_service = mx_router.create_fabric_interface(service_node_obj.name)
     conn_link_obj.service_fab_intf = fi_service
-    mx_router.add_child_intefaces_to_fabric(service_node_obj.name, fi_service, conn_link_obj.service_links)
+    mx_router.add_child_interfaces_to_fabric(service_node_obj.name, fi_service, conn_link_obj.service_links)
 
     # return 200 Success
     _LOG.debug("Good, return 200 Success")
