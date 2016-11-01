@@ -366,10 +366,11 @@ def services_delete_handler(name):
 
         # Contrail service deletion
         vlan_list = []
-        vlan_list.append(service_obj.access_vlan)
-        mx_router.delService(ne_access_obj.name, ne_access_obj.mgmt_ip, ne_access_obj.router_id,
-                             service_obj.access_port, vlan_list,
-                             ne_service_obj.name, ne_service_obj.mgmt_ip, ne_service_obj.router_id)
+        for avlan in service_obj.access_vlans:
+            vlan_list.append(str(avlan))
+        mx_router.deleteService(ne_access_obj.name, ne_access_obj.router_id+"/32",
+                                service_obj.access_port, conn_link_obj.access_fab_intf, vlan_list,
+                                ne_service_obj.name, ne_service_obj.router_id+"/32")
 
         # Decrement service ref count
         conn_link_obj.del_ref_cnt()
