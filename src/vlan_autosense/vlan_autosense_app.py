@@ -33,6 +33,9 @@ def print_time(threadName, delay):
       print "%s: %s" % (threadName, time.ctime(time.time()))
 
 def vlan_autosense(threadName):
+    pass
+
+def upd_receive(threadName):
     UDP_IP = "127.0.0.1"
     UDP_PORT = 15000
 
@@ -64,7 +67,7 @@ if __name__ == "__main__":
     try:
         thread.start_new_thread(print_time, ("Thread-1", 2, ))
         thread.start_new_thread(print_time, ("Thread-2", 4, ))
-        thread.start_new_thread(vlan_autosense, ("Thread-3", ))
+        thread.start_new_thread(upd_receive, ("Thread-3", ))
     except:
         print "Error: unable to start thread"
 
