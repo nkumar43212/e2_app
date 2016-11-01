@@ -193,10 +193,136 @@ def services_listing_handler():
     return json.dumps({"services": tmp_list})
 
 
-'''
-@put('/services/<oldname>')
+@put('/services/<name>')
 def services_update_handler(name):
-'''
+    # Handles Services updates
+    _LOG.debug("PUT method - /services/" + name)
+    try:
+        # Check if name exists
+        if name not in _services_dict.keys():
+            _LOG.exception("Services " + name + " not present")
+            raise KeyError
+        service_obj = _services_dict[name]
+    except KeyError:
+        response.status = 404
+        return
+
+    try:
+        # parse input data
+        try:
+            # Convert to json
+            body_data = request.body.read()
+            data = json.loads(body_data, object_pairs_hook=OrderedDict)
+            # data = request.json() --- not working
+        except:
+            _LOG.exception("Data value provided has errors = " + body_data)
+            raise ValueError
+
+        if data is None:
+            _LOG.exception("Data value is None")
+            raise ValueError
+
+        # extract and validate
+        try:
+            if namepattern.match(data['service_node']) is None:
+                _LOG.exception("Incorrect (key:service_node) value in data = " + str(data))
+                raise ValueError
+            new_service_node = data['service_node']
+        except (TypeError, KeyError):
+            _LOG.exception("Missing keys (name, service_node) in data = " +
+                           str(data))
+            raise ValueError
+
+        # Get NE access node
+        access_node = service_obj.access_node
+        if access_node not in _ne_dict.keys():
+            _LOG.exception("access_node does not exist: " + name)
+            raise ValueError
+        else:
+            ne_access_obj = _ne_dict[access_node]
+            if ne_access_obj.role != "access":
+                raise ValueError
+
+        # Get NE old service node
+        old_service_node = service_obj.service_node
+        if old_service_node not in _ne_dict.keys():
+            _LOG.exception("old_service_node does not exist: " + name)
+            raise ValueError
+        else:
+            old_ne_service_obj = _ne_dict[old_service_node]
+            if ne_service_obj.role != "service":
+                raise ValueError
+
+        # Check for existence - new service node
+        if new_service_node not in _ne_dict.keys():
+            _LOG.exception("service_node does not exist " + name + " in data = " + str(data))
+            raise ValueError
+        else:
+            new_ne_service_obj = _ne_dict[new_service_node]
+            if new_ne_service_obj.role != "service":
+                raise ValueError
+
+        # Check for existence - connection between access and new service
+        found_conn = False
+        new_conn_link_obj = None
+        for cl_obj in _conn_link_dict.itervalues():
+            if cl_obj.access_node == access_node and cl_obj.service_node == new_service_node:
+                _LOG.debug("Connection link exist between " + access_node + " and " + new_service_node)
+                new_conn_link_obj = cl_obj
+                found_conn = True
+        if not found_conn:
+            _LOG.debug("NO Connection link found between " + access_node + " and " + new_service_node)
+            raise ValueError
+
+        # Check for existence - connection between access and old service
+        found_conn = False
+        old_conn_link_obj = None
+        for cl_obj in _conn_link_dict.itervalues():
+            if cl_obj.access_node == access_node and cl_obj.service_node == old_service_node:
+                _LOG.debug("Connection link exist between " + access_node + " and " + old_service_node)
+                old_conn_link_obj = cl_obj
+                found_conn = True
+        if not found_conn:
+            _LOG.debug("NO Connection link found between " + access_node + " and " + old_service_node)
+            raise ValueError
+
+    except ValueError:
+        response.status = 400
+        return
+    except KeyError as e:
+        response.status = e.args[0]
+        return
+
+    # Let's configure the service now
+    # Update Service object with new service node name
+    service_obj.service_node = new_service_node
+    # print(json.dumps(service_obj, default=jdefault))
+
+    # Increment new service ref count
+    new_conn_link_obj.add_ref_cnt()
+
+    # Contrail new service addition
+    vlan_list = []
+    vlan_list.append(service_obj.access_vlan)
+    mx_router.addService(ne_access_obj.name, ne_access_obj.mgmt_ip, ne_access_obj.router_id,
+                         service_obj.access_port, vlan_list,
+                         new_ne_service_obj.name, new_ne_service_obj.mgmt_ip, new_ne_service_obj.router_id)
+
+    # Contrail old service deletion
+    vlan_list = []
+    vlan_list.append(service_obj.access_vlan)
+    mx_router.delService(ne_access_obj.name, ne_access_obj.mgmt_ip, ne_access_obj.router_id,
+                         service_obj.access_port, vlan_list,
+                         old_ne_service_obj.name, old_ne_service_obj.mgmt_ip, old_ne_service_obj.router_id)
+
+    # Decrement old service ref count
+    old_conn_link_obj.del_ref_cnt()
+
+    # return 200 Success
+    _LOG.debug("Good, return 200 Success")
+    response.headers['Content-Type'] = 'application/json'
+    return json.dumps({'name': name})
+
 
 @delete('/services/<name>')
 def services_delete_handler(name):
@@ -235,7 +361,7 @@ def services_delete_handler(name):
             _LOG.debug("NO Connection link found between " + access_node + " and " + service_node)
             raise ValueError
 
-        # Delete the service
+        # Contrail service deletion
         vlan_list = []
         vlan_list.append(service_obj.access_vlan)
         mx_router.delService(ne_access_obj.name, ne_access_obj.mgmt_ip, ne_access_obj.router_id,
