@@ -158,7 +158,7 @@ def ne_creation_handler():
     mx_router.add_network_element(name, mgmt_ip)
 
     # Add default loopback interface
-    mx_router.add_network_physical_interfaces(name, mgmt_ip, 'lo0')
+    mx_router.add_network_physical_interfaces(name, 'lo0')
 
     # return 200 Success
     _LOG.debug("Good, return 200 Success")
@@ -211,7 +211,7 @@ def ne_delete_handler(name):
     routerId.freeRouterId(ne_obj.router_id)
 
     # Delete default loopback interface
-    mx_router.del_network_physical_interfaces(name, ne_obj.mgmt_ip, 'lo0')
+    mx_router.delete_network_physical_interfaces(name, 'lo0')
 
     # Delete in Contrail --- TODO REVISIT --- Check for error condition as well
     mx_router.delete_network_element(name)
