@@ -71,6 +71,12 @@ class E2ConfigHandler:
                     self.e2_cfg.host = config.get(SECTION, "host")
                 if config.has_option(SECTION, "http_port"):
                     self.e2_cfg.http_port = config.getint(SECTION, "http_port")
+                if config.has_option(SECTION, "vlan_autosense"):
+                    self.e2_cfg.vlan_autosense = config.getboolean(SECTION, "vlan_autosense")
+                if config.has_option(SECTION, "vlan_autosense_host"):
+                    self.e2_cfg.vlan_autosense_host = config.get(SECTION, "vlan_autosense_host")
+                if config.has_option(SECTION, "vlan_autosense_port"):
+                    self.e2_cfg.http_port = config.getint(SECTION, "vlan_autosense_port")
 
             # Read na_ctrl config
             SECTION = "LOGGING"

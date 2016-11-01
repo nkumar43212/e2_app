@@ -23,8 +23,17 @@ class E2Config(object):
         # The interface that E2 listens to web server (rest APIs)
         self.host = e2consts.HOST
 
-        # The port that E2 listens on to web server (rest APIs).
+        # The port that E2 listens on to web server (rest APIs)
         self.http_port = e2consts.HTTP_PORT
+
+        # Vlan Autosense feature
+        self.vlan_autosense = e2consts.VLAN_AUTOSENSE
+
+        # The interface that E2 listens to vlan autosense packets
+        self.vlan_autosense_host = e2consts.HOST
+
+        # The port that E2 listens on to vlan autosense packets
+        self.vlan_autosense_port = e2consts.VLAN_AUTOSENSE_PORT
 
         '''
         LOG files
@@ -43,6 +52,9 @@ class E2Config(object):
         str += ("mode=%s\n" % self.mode)
         str += ("host=%s\n" % self.host)
         str += ("http_port=%s\n" % self.http_port)
+        str += ("vlan_autosense=%s\n" % self.vlan_autosense)
+        str += ("vlan_autosense_host=%s\n" % self.vlan_autosense_host)
+        str += ("vlan_autosense_port=%s\n" % self.vlan_autosense_port)
         str += ("log_file_path=%s\n" % self.log_file_path)
         str += ("log_file_name=%s\n" % self.log_file_name)
         str += ("log_level=%s\n" % self.log_level)

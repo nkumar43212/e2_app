@@ -34,6 +34,10 @@ class E2Constants(object):
     HOST = '0.0.0.0'
     HTTP_PORT = 10001
 
+    # VLAN autosense
+    VLAN_AUTOSENSE = True
+    VLAN_AUTOSENSE_PORT = 10002
+
     # E2 mode
     MODE_ADJ_API = 'Adj_Api'
     MODE_ADJ_DISCOVER = 'Adj_Discover'
@@ -54,6 +58,8 @@ if __name__ == "__main__":
 
     print E2Constants.HOST
     print E2Constants.HTTP_PORT
+    print E2Constants.VLAN_AUTOSENSE
+    print E2Constants.VLAN_AUTOSENSE_PORT
     print E2Constants.MODE
     print E2Constants.MODE_ADJ_API
     print E2Constants.MODE_ADJ_DISCOVER
