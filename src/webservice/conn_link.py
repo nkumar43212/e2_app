@@ -175,24 +175,22 @@ def conn_link_creation_handler():
     # Contrail link addition
     # Add access node interfaces
     for intf in conn_link_obj.access_links:
-        print "access: " + intf
-        mx_router.add_network_physical_interfaces(access_node_obj.name, access_node_obj.mgmt_ip, intf)
+        print "add in access f-intf: " + intf
+        mx_router.add_network_physical_interfaces(access_node_obj.name, intf)
     # Add service node interfaces
     for intf in conn_link_obj.service_links:
-        print "service: " + intf
-        mx_router.add_network_physical_interfaces(service_node_obj.name, service_node_obj.mgmt_ip, intf)
+        print "add in service f-intf: " + intf
+        mx_router.add_network_physical_interfaces(service_node_obj.name, intf)
 
     # Create Fabric interface - access node
-    fi_access = mx_router.create_fabric_interface(access_node_obj.name, access_node_obj.mgmt_ip)
+    fi_access = mx_router.create_fabric_interface(access_node_obj.name)
     conn_link_obj.access_fab_intf = fi_access
-    mx_router.add_child_intefaces_to_fabric(access_node_obj.name, access_node_obj.mgmt_ip,
-                                            fi_access, conn_link_obj.access_links)
+    mx_router.add_child_intefaces_to_fabric(access_node_obj.name, fi_access, conn_link_obj.access_links)
 
     # Create Fabric interface - service node
-    fi_service = mx_router.create_fabric_interface(service_node_obj.name, service_node_obj.mgmt_ip)
+    fi_service = mx_router.create_fabric_interface(service_node_obj.name)
     conn_link_obj.service_fab_intf = fi_service
-    mx_router.add_child_intefaces_to_fabric(service_node_obj.name, service_node_obj.mgmt_ip,
-                                            fi_service, conn_link_obj.service_links)
+    mx_router.add_child_intefaces_to_fabric(service_node_obj.name, fi_service, conn_link_obj.service_links)
 
     # return 200 Success
     _LOG.debug("Good, return 200 Success")
@@ -259,23 +257,23 @@ def conn_link_delete_handler(name):
 
     # Contrail link removal
     # Delete Fabric interface - access node
-    mx_router.del_child_intefaces_from_fabric(access_node_obj.name, access_node_obj.mgmt_ip,            \
-                                              conn_link_obj.access_fab_intf, conn_link_obj.access_links)
-    mx_router.delete_fabric_interface(access_node_obj.name, access_node_obj.mgmt_ip, conn_link_obj.access_fab_intf)
+    mx_router.delete_child_interfaces_from_fabric(access_node_obj.name,                 \
+                                                  conn_link_obj.access_fab_intf, conn_link_obj.access_links)
+    mx_router.delete_fabric_interface(access_node_obj.name, conn_link_obj.access_fab_intf)
 
     # Delete Fabric interface - service node
-    mx_router.del_child_intefaces_from_fabric(service_node_obj.name, service_node_obj.mgmt_ip,          \
-                                              conn_link_obj.service_fab_intf, conn_link_obj.service_links)
-    mx_router.delete_fabric_interface(service_node_obj.name, service_node_obj.mgmt_ip, conn_link_obj.service_fab_intf)
+    mx_router.delete_child_interfaces_from_fabric(service_node_obj.name,                \
+                                                  conn_link_obj.service_fab_intf, conn_link_obj.service_links)
+    mx_router.delete_fabric_interface(service_node_obj.name, conn_link_obj.service_fab_intf)
 
     # Delete access node interfaces
     for intf in conn_link_obj.access_links:
-        print "access: " + intf
-        mx_router.del_network_physical_interfaces(access_node_obj.name, access_node_obj.mgmt_ip, intf)
+        print "delete in access f-intf: " + intf
+        mx_router.delete_network_physical_interfaces(access_node_obj.name, intf)
     # Delete service node interfaces
     for intf in conn_link_obj.service_links:
-        print "service: " + intf
-        mx_router.del_network_physical_interfaces(service_node_obj.name, service_node_obj.mgmt_ip, intf)
+        print "delete in service f-intf: " + intf
+        mx_router.delete_network_physical_interfaces(service_node_obj.name, intf)
 
     # Delete the conn_link object as well
     del conn_link_obj
