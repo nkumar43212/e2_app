@@ -158,5 +158,6 @@ class E2ConfigHandler:
 # Main function
 if __name__ == "__main__":
     # Create E2ConfigHandler object to parse config file and input arguments
+    # python config_handler.py -c ../../config/e2_config.ini start
     config_handler = E2ConfigHandler()
     config_handler.options_handle()
