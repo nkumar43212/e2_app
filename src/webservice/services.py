@@ -250,12 +250,12 @@ def services_update_handler(name):
             raise ValueError
         else:
             old_ne_service_obj = _ne_dict[old_service_node]
-            if ne_service_obj.role != "service":
+            if old_ne_service_obj.role != "service":
                 raise ValueError
 
         # Check for existence - new service node
         if new_service_node not in _ne_dict.keys():
-            _LOG.exception("service_node does not exist " + name + " in data = " + str(data))
+            _LOG.exception("service_node does not exist " + name + " in _ne_dict")
             raise ValueError
         else:
             new_ne_service_obj = _ne_dict[new_service_node]
