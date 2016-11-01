@@ -37,12 +37,12 @@ _services_dict = dict()
 
 # Services Class
 class Services(object):
-    def __init__(self, name, access_node, access_port, access_vlan,
+    def __init__(self, name, access_node, access_port, access_vlans,
                  service_node = None):
         self.name = name
         self.access_node = access_node
         self.access_port = access_port
-        self.access_vlan = access_vlan
+        self.access_vlans = access_vlans
         self.service_node = service_node
 
     def json(self):
@@ -50,7 +50,7 @@ class Services(object):
         tmp_dict['name'] = self.name
         tmp_dict['access_node'] = self.access_node
         tmp_dict['access_port'] = self.access_port
-        tmp_dict['access_vlan'] = self.access_vlan
+        tmp_dict['access_vlans'] = self.access_vlans
         tmp_dict['service_node'] = self.service_node
         return tmp_dict
 
@@ -89,19 +89,21 @@ def services_creation_handler():
                 _LOG.exception("Incorrect (key:access_port) value in data = " + str(data))
                 raise ValueError
             access_port = data['access_port']
-            if data['access_vlan'] is None:
-                _LOG.exception("Incorrect (key:access_vlan) value in data = " + str(data))
+            if data['access_vlans'] is None:
+                _LOG.exception("Incorrect (key:access_vlans) value in data = " + str(data))
                 raise ValueError
-            access_vlan = data['access_vlan']
-            if ((access_vlan <= 0) or (access_vlan > 1024)):
-                _LOG.exception("Incorrect (key:access_vlan) value in data = " + str(data))
-                raise ValueError
+            # Note access_vlans is a list of vlans
+            access_vlans = data['access_vlans']
+            for avlan in access_vlans:
+                if ((avlan <= 0) or (avlan > 1024)):
+                    _LOG.exception("Some incorrect (key:access_vlans) value in data = " + str(data))
+                    raise ValueError
             if namepattern.match(data['service_node']) is None:
                 _LOG.exception("Incorrect (key:service_node) value in data = " + str(data))
                 raise ValueError
             service_node = data['service_node']
         except (TypeError, KeyError):
-            _LOG.exception("Missing keys (name, access_node, access_port, access_vlan, service_node) in data = " +
+            _LOG.exception("Missing keys (name, access_node, access_port, access_vlans, service_node) in data = " +
                            str(data))
             raise ValueError
 
@@ -153,7 +155,7 @@ def services_creation_handler():
         return
 
     # Create Service object
-    service_obj = Services(name, access_node, access_port, access_vlan, service_node)
+    service_obj = Services(name, access_node, access_port, access_vlans, service_node)
     # print(json.dumps(service_obj, default=jdefault))
 
     # Increment service ref count
@@ -161,14 +163,15 @@ def services_creation_handler():
     _services_dict[name] = service_obj
 
     # Create access physical interface
-    mx_router.add_network_physical_interfaces(ne_access_obj.name, ne_access_obj.mgmt_ip, access_port)
+    mx_router.add_network_physical_interfaces(ne_access_obj.name, access_port)
 
     # Contrail service addition
     vlan_list = []
-    vlan_list.append(access_vlan)
-    mx_router.addService(ne_access_obj.name, ne_access_obj.mgmt_ip, ne_access_obj.router_id,
-                         access_port, vlan_list,
-                         ne_service_obj.name, ne_service_obj.mgmt_ip, ne_service_obj.router_id)
+    for avlan in access_vlans:
+        vlan_list.append(str(avlan))
+    mx_router.addService(ne_access_obj.name, ne_access_obj.router_id+"/32",
+                         access_port, conn_link_obj.access_fab_intf, vlan_list,
+                         ne_service_obj.name, ne_service_obj.router_id+"/32")
 
     # return 200 Success
     _LOG.debug("Good, return 200 Success")
