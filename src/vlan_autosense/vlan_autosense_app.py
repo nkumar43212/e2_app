@@ -24,6 +24,13 @@ from infra.log import Logger
 # Logger
 _LOG = Logger("e2_app", __name__, "debug")
 
+def vlan_autosense_app (host, port):
+    # Start the vlan autosense thread
+    _LOG.debug("Starting E2 Vlan Autosensing Application on port " + str(port))
+    # Supply host and port --- TODO
+    thread.start_new_thread(vlan_autosense, ("Vlan autosense thread",))
+
+
 # Define a function for the thread
 def print_time(threadName, delay):
    count = 0
@@ -33,9 +40,9 @@ def print_time(threadName, delay):
       print "%s: %s" % (threadName, time.ctime(time.time()))
 
 def vlan_autosense(threadName):
-    pass
+    udp_receive(threadName)
 
-def upd_receive(threadName):
+def udp_receive(threadName):
     UDP_IP = "127.0.0.1"
     UDP_PORT = 15000
 
@@ -65,9 +72,9 @@ def upd_receive(threadName):
 if __name__ == "__main__":
     # Create two threads
     try:
-        thread.start_new_thread(print_time, ("Thread-1", 2, ))
-        thread.start_new_thread(print_time, ("Thread-2", 4, ))
-        thread.start_new_thread(upd_receive, ("Thread-3", ))
+        thread.start_new_thread(print_time, ("Thread-Timer-1", 2, ))
+        thread.start_new_thread(print_time, ("Thread-Timer-2", 4, ))
+        thread.start_new_thread(udp_receive, ("Thread-UDP-Receive-3", ))
     except:
         print "Error: unable to start thread"
 

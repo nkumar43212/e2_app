@@ -24,7 +24,7 @@ _LOG = Logger("e2_app", __name__, "debug")
 
 def web_rest_api (host, port, mode):
     # Start the webserver for REST api
-    _LOG.debug("Starting E2 Application on port " + str(port))
+    _LOG.debug("Starting E2 WebServer Application on port " + str(port))
     bottle.run(host=host, port=port, debug=True)
 
 # Main function

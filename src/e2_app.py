@@ -10,6 +10,8 @@
 
 # Libraries/Modules
 import sys
+
+from vlan_autosense.vlan_autosense_app import vlan_autosense_app
 from webservice.web_rest_api import web_rest_api
 from infra.log import RootLogger
 from shared.config_handler import E2ConfigHandler
@@ -51,6 +53,10 @@ if __name__ == "__main__":
         _LOG.set_handler(config_handler.e2_cfg.log_file_path + "/" + config_handler.e2_cfg.log_file_name,
                          5242880, 5)
         _LOG.set_level(config_handler.e2_cfg.log_level)
+
+        # Start vlan autosensing
+        if config_handler.e2_cfg.vlan_autosense:
+            vlan_autosense_app(config_handler.e2_cfg.vlan_autosense_host, config_handler.e2_cfg.vlan_autosense_port)
 
         # Start the web service
         web_rest_api(config_handler.e2_cfg.host, config_handler.e2_cfg.http_port, config_handler.e2_cfg.mode)
