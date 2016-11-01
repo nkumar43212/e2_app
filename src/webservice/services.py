@@ -306,17 +306,16 @@ def services_update_handler(name):
 
     # Contrail new service addition
     vlan_list = []
-    vlan_list.append(service_obj.access_vlan)
-    mx_router.addService(ne_access_obj.name, ne_access_obj.mgmt_ip, ne_access_obj.router_id,
-                         service_obj.access_port, vlan_list,
-                         new_ne_service_obj.name, new_ne_service_obj.mgmt_ip, new_ne_service_obj.router_id)
+    for avlan in service_obj.access_vlans:
+        vlan_list.append(str(avlan))
+    mx_router.addService(ne_access_obj.name, ne_access_obj.router_id+"/32",
+                         service_obj.access_port, new_conn_link_obj.access_fab_intf, vlan_list,
+                         new_ne_service_obj.name, new_ne_service_obj.router_id+"/32")
 
     # Contrail old service deletion
-    vlan_list = []
-    vlan_list.append(service_obj.access_vlan)
-    mx_router.delService(ne_access_obj.name, ne_access_obj.mgmt_ip, ne_access_obj.router_id,
-                         service_obj.access_port, vlan_list,
-                         old_ne_service_obj.name, old_ne_service_obj.mgmt_ip, old_ne_service_obj.router_id)
+    mx_router.deleteService(ne_access_obj.name, ne_access_obj.router_id+"/32",
+                            service_obj.access_port, old_conn_link_obj.access_fab_intf, vlan_list,
+                            old_ne_service_obj.name, old_ne_service_obj.router_id+"/32")
 
     # Decrement old service ref count
     old_conn_link_obj.del_ref_cnt()
