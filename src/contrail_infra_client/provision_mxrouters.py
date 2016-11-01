@@ -1,4 +1,4 @@
-#File name:   provision_simple_interfaces.py
+#File name:   provision_mxrouters.py
 #!/usr/bin/python
 #
 # Copyright (c) 2016-17 Juniper Networks, Inc. All rights reserved.
@@ -15,25 +15,15 @@ from netaddr import IPNetwork
 
 from vnc_api.vnc_api import *
 
-
 def get_ip(ip_w_pfx):
     return str(IPNetwork(ip_w_pfx).ip)
 # end get_ip
-
-class NetworkElement(object):
-
-    def __init__(self, name, mgmt_ip):
-        self._name    = name
-        self._mgmt_ip = mgmt_ip
-      
 
 class MxRouter(object):
 
     def __init__(self, args_str):
         self._args = None
-        self.mxrouters = {}
-        self.mxrouters_id = {}
-        if args_str is None:
+        if not args_str:
             args_str = ' '.join(sys.argv[1:])
         self._parse_args(args_str)
 
@@ -82,11 +72,6 @@ class MxRouter(object):
     # end create_router
 
     def add_network_element(self, name, mgmt_ip):
-        network_element = self.mxrouters.get(name)
-        if not network_element:
-            network_element = NetworkElement(name, mgmt_ip)
-            self.mxrouters_id[id(network_element)] = network_element
-            self.mxrouters[name] = network_element
         #ipam
         ipam_obj = None
         ipam_name = 'ipam1'
@@ -106,7 +91,7 @@ class MxRouter(object):
         vn_name += name
         try:
             vn_obj = self._vnc_lib.virtual_network_read(fq_name=[self._args.admin_tenant_name, \
-			    self._args.admin_tenant_project, vn_name])
+                                                        self._args.admin_tenant_project, vn_name])
         except NoIdError:
             pass
  
@@ -127,29 +112,22 @@ class MxRouter(object):
         pr = None
         try:
             pr = self._vnc_lib.physical_router_read(fq_name=[self._args.admin_tenant_group, \
-			    network_element._name])
+			    name])
         except NoIdError:
             pass
  
         if pr is None:
-            bgp_router, pr = self.create_router(network_element._name, network_element._mgmt_ip, \
+            bgp_router, pr = self.create_router(name, mgmt_ip, \
 			    'Embe1mpls')
             pr.set_virtual_network(vn_obj)
+            pr.set_physical_router_mx_type('contrail')
             self._vnc_lib.physical_router_update(pr)
 
     # end add_network_element
 
     def delete_network_element(self, name):
         print 'delete_network_element\n'
-        network_element = self.mxrouters.get(name)
 
-        if network_element:
-            print network_element._name
-            print network_element._mgmt_ip
-            del self.mxrouters_id[id(network_element)]
-            del self.mxrouters[network_element._name]
-
-        #import pdb; pdb.set_trace()
         #physical-router
         pr = None
         try:
@@ -181,6 +159,16 @@ class MxRouter(object):
             fi_intf_list = pr.get_fabric_interfaces()
             if fi_intf_list is not None:
                 for fi in fi_intf_list:
+                    try:
+                        fi_intf = self._vnc_lib.fabric_interface_read(fq_name=fi['to'])
+                    except NoIdError:
+                        continue
+                    #pi_id = self._vnc_lib.physical_interface_delete(phy.get_fq_name())
+                    #sometimes logical-interfaces are still hanging, so delete it
+                    li_intf_list = fi_intf.get_logical_interfaces()
+                    if li_intf_list is not None:
+                        for li in li_intf_list:
+                            li_id = self._vnc_lib.logical_interface_delete(li['to'])
                     fi_id = self._vnc_lib.fabric_interface_delete(fi['to'])
 
         #virtual-machine-interface
@@ -196,9 +184,23 @@ class MxRouter(object):
         if vmi is not None:
             self._vnc_lib.virtual_machine_interface_delete(vmi.get_fq_name())
 
+        #get routing-protocols info
+        rp = None
+        try:
+            rp = self._vnc_lib.routing_protocols_read(fq_name=[name])
+        except NoIdError:
+            pass
+
+        #uuid = self._vnc_lib.get_default_routing_protocols_id()
+        #self._vnc_lib.routing_protocols_delete(id=uuid)
+
         #delete 'physical-router' now.
         if pr is not None:
             self._vnc_lib.physical_router_delete(pr.get_fq_name())
+
+        #delete routing-protocols now
+        if rp is not None:
+            self._vnc_lib.routing_protocols_delete(rp.get_fq_name())
 
         #bgp-router
         br = None
@@ -239,31 +241,13 @@ class MxRouter(object):
         return 0
     # end delete_network_element
 
-    def get_network_element(self, name):
-        network_element = self.mxrouters.get(name)
 
-        return network_element
-
-    def show_all_network_elements(self):
-        for name in list(self.mxrouters):
-            network_element = self.get_network_element(name)
-            #print "router:%s, ip %d" %s (network_element._name, network_element._mgmt_ip)
-            print network_element._name
-            print network_element._mgmt_ip
-            print "----------"
-
-    def add_network_physical_interfaces(self, name, mgmt_ip, phy_intf):
-        network_element = self.mxrouters.get(name)
-        if not network_element:
-            network_element = NetworkElement(name, mgmt_ip)
-            self.mxrouters_id[id(network_element)] = network_element
-            self.mxrouters[name] = network_element
-
+    def add_network_physical_interfaces(self, name, phy_intf):
         #physical-router
         pr = None
         try:
             pr = self._vnc_lib.physical_router_read(fq_name=[self._args.admin_tenant_group,     \
-			                                        network_element._name])
+			    name])
         except NoIdError:
             print 'phy-router lookup failed'
             return
@@ -272,7 +256,7 @@ class MxRouter(object):
         pi = None
         try:
             pi = self._vnc_lib.physical_interface_read(fq_name=[self._args.admin_tenant_group,  \
-                                                       network_element._name, phy_intf])
+			    name, phy_intf])
         except NoIdError:
             pass
 
@@ -280,7 +264,7 @@ class MxRouter(object):
             pi = PhysicalInterface(phy_intf, parent_obj = pr)
             pi_id = self._vnc_lib.physical_interface_create(pi)
         else:
-            print 'phy_intf already exists'
+            print 'phy_intf lookup failed'
             return
 
         #update physical-router
@@ -288,18 +272,12 @@ class MxRouter(object):
 
     # end add_network_physical_interfaces
 
-    def del_network_physical_interfaces(self, name, mgmt_ip, phy_intf):
-        network_element = self.mxrouters.get(name)
-        if not network_element:
-            network_element = NetworkElement(name, mgmt_ip)
-            self.mxrouters_id[id(network_element)] = network_element
-            self.mxrouters[name] = network_element
-
+    def delete_network_physical_interfaces(self, name, phy_intf):
         #physical-router
         pr = None
         try:
             pr = self._vnc_lib.physical_router_read(fq_name=[self._args.admin_tenant_group, \
-			                                        network_element._name])
+			    name])
         except NoIdError:
             print 'phy-router lookup failed'
             return
@@ -308,7 +286,7 @@ class MxRouter(object):
         pi = None
         try:
             pi = self._vnc_lib.physical_interface_read(fq_name=[self._args.admin_tenant_group, \
-			    network_element._name, phy_intf])
+			    name, phy_intf])
         except NoIdError:
             print 'phy-intf lookup failed'
             return
@@ -323,20 +301,16 @@ class MxRouter(object):
         pi_id = self._vnc_lib.physical_interface_delete(pi.get_fq_name())
         self._vnc_lib.physical_router_update(pr)
 
-    # end del_network_physical_interfaces
+    # end delete_network_physical_interfaces
 
-    def add_network_logical_interfaces(self, name, mgmt_ip, phy_intf, logical_intf, vlan_tag):
-        network_element = self.mxrouters.get(name)
-        if not network_element:
-            network_element = NetworkElement(name, mgmt_ip)
-            self.mxrouters_id[id(network_element)] = network_element
-            self.mxrouters[name] = network_element
+    def add_network_logical_interfaces(self, name, phy_intf, logical_intf, vlan_tag,
+                                       encap, family, ipaddress):
 
         #physical-router
         pr = None
         try:
             pr = self._vnc_lib.physical_router_read(fq_name=[self._args.admin_tenant_group, \
-			                                        network_element._name])
+			    name])
         except NoIdError:
             print 'phy-router lookup failed'
             return
@@ -345,7 +319,7 @@ class MxRouter(object):
         pi = None
         try:
             pi = self._vnc_lib.physical_interface_read(fq_name=[self._args.admin_tenant_group, \
-			                                           network_element._name, phy_intf])
+			    name, phy_intf])
         except NoIdError:
             print 'phy-intf lookup failed'
             return
@@ -362,7 +336,6 @@ class MxRouter(object):
  
         if vn_obj is None:
             vn_obj = VirtualNetwork(vn_name)
-
             vn_obj.add_network_ipam(ipam_obj, VnSubnetsType([IpamSubnetType(SubnetType("10.0.0.0", \
 						    24))]))
             vn1_uuid = self._vnc_lib.virtual_network_create(vn_obj)
@@ -384,7 +357,7 @@ class MxRouter(object):
 
         if vmi is None:
             vmi = VirtualMachineInterface(fq_name=[self._args.admin_tenant_name, \
-                            self._args.admin_tenant_project, vmi_name] , parent_type='project')
+                                          self._args.admin_tenant_project, vmi_name] , parent_type='project')
             vmi.set_virtual_network(vn_obj)
             vmi.device_owner = 'physicalrouter'
             self._vnc_lib.virtual_machine_interface_create(vmi)
@@ -393,33 +366,90 @@ class MxRouter(object):
         li = None
         try:
             li = self._vnc_lib.logical_interface_read(fq_name=[self._args.admin_tenant_group, \
-			    network_element._name, phy_intf, logical_intf])
+			    name, phy_intf, logical_intf])
         except NoIdError:
             pass
        
         if li is None:
             li = LogicalInterface(logical_intf, parent_obj = pi)
-            li.set_logical_interface_vlan_tag(int(vlan_tag))
+            if vlan_tag is not None:
+                li.set_logical_interface_vlan_tag(int(vlan_tag))
+            if family is not None:
+                li.set_logical_interface_family(family)
+            if ipaddress is not None:
+                li.set_logical_interface_ipaddress(ipaddress)
+            if encap is not None:
+                li.set_logical_interface_encap_type(encap)
             li.set_virtual_machine_interface(vmi)
             li_id = self._vnc_lib.logical_interface_create(li)
+            self._vnc_lib.physical_interface_update(pi)
 
         #update physical-router
         self._vnc_lib.physical_router_update(pr)
 
     # end add_network_logical_interfaces
 
-    def del_network_logical_interfaces(self, name, mgmt_ip, phy_intf, logical_intf):
-        network_element = self.mxrouters.get(name)
-        if not network_element:
-            network_element = NetworkElement(name, mgmt_ip)
-            self.mxrouters_id[id(network_element)] = network_element
-            self.mxrouters[name] = network_element
+    def add_network_logical_fi_interfaces(self, name, fabric_intf,
+                                          logical_intf, vlan_tag, encap,
+                                          family, ipaddress):
+
+        #physical-router
+        pr = None
+        try:
+            pr = self._vnc_lib.physical_router_read(fq_name=[self._args.admin_tenant_group, \
+			    name])
+        except NoIdError:
+	    print 'phy-router lookup failed'
+            return
+
+        #fabric-interface
+        fi = None
+        try:
+            fi = self._vnc_lib.fabric_interface_read(fq_name=[self._args.admin_tenant_group, \
+			    name, fabric_intf])
+        except NoIdError:
+	    print 'phy-intf lookup failed'
+            return
+
+        #logical-interface
+        li = None
+        try:
+            li = self._vnc_lib.logical_interface_read(fq_name=[self._args.admin_tenant_group, \
+			    name, fabric_intf, logical_intf])
+        except NoIdError:
+            pass
+
+        if li is None:
+            li = LogicalInterface(logical_intf, parent_obj = fi)
+            if vlan_tag is not None:
+                li.set_logical_interface_vlan_tag(int(vlan_tag))
+            if family is not None:
+                li.set_logical_interface_family(family)
+            if ipaddress is not None:
+                li.set_logical_interface_ipaddress(ipaddress)
+            li_id = self._vnc_lib.logical_interface_create(li)
+            self._vnc_lib.fabric_interface_update(fi)
+
+        #update physical-router
+        self._vnc_lib.physical_router_update(pr)
+
+    # end add_network_logical_fi_interfaces
+
+    def delete_network_logical_interfaces(self, name, phy_intf, logical_intf):
+        #physical-router
+        pr = None
+        try:
+            pr = self._vnc_lib.physical_router_read(fq_name=[self._args.admin_tenant_group, \
+			    name])
+        except NoIdError:
+            print 'phy-router lookup failed'
+            return
 
         #physical-interface
         pi = None
         try:
             pi = self._vnc_lib.physical_interface_read(fq_name=[self._args.admin_tenant_group, \
-			    network_element._name, phy_intf])
+			    name, phy_intf])
         except NoIdError:
             print 'phy-intf lookup failed'
             return
@@ -439,7 +469,7 @@ class MxRouter(object):
         li = None
         try:
             li = self._vnc_lib.logical_interface_read(fq_name=[self._args.admin_tenant_group, \
-			    network_element._name, phy_intf, logical_intf])
+			    name, phy_intf, logical_intf])
         except NoIdError:
             print 'logical-intf lookup failed'
             return
@@ -449,34 +479,34 @@ class MxRouter(object):
 
         #do we need to update any or else this is enough???
         pi_id = self._vnc_lib.physical_interface_update(pi)
+        #update physical-router
+        self._vnc_lib.physical_router_update(pr)
 
-    # end del_network_logical_interfaces
+    # end delete_network_logical_interfaces
 
-    def create_fabric_interface(self, name, mgmt_ip):
-        network_element = self.mxrouters.get(name)
-        if not network_element:
-            network_element = NetworkElement(name, mgmt_ip)
-            self.mxrouters_id[id(network_element)] = network_element
-            self.mxrouters[name] = network_element
-
+    def create_fabric_interface(self, name):
         #physical-router
         pr = None
         try:
             pr = self._vnc_lib.physical_router_read(fq_name=[self._args.admin_tenant_group, \
-                                                    network_element._name])
+                                                    name])
         except NoIdError:
             print 'phy-router lookup failed'
             return
 
+        fi_intf_list = pr.get_fabric_interfaces()
+        fi_index = 0
+        if fi_intf_list is not None:
+             fi_index = len(fi_intf_list)
+
         fi_intf = 'fi'
-        fi_intf += str(self._args.fi_index)
-        self._args.fi_index += 1
+        fi_intf += str(fi_index)
 
         #fabric-interface
         fi = None
         try:
             fi = self._vnc_lib.fabric_interface_read(fq_name=[self._args.admin_tenant_group, \
-                                                     network_element._name, fi_intf])
+                                                     name, fi_intf])
         except NoIdError:
             pass
 
@@ -489,18 +519,12 @@ class MxRouter(object):
 
     # end create_fabric_interface
 
-    def delete_fabric_interface(self, name, mgmt_ip, fi_intf):
-        network_element = self.mxrouters.get(name)
-        if not network_element:
-            network_element = NetworkElement(name, mgmt_ip)
-            self.mxrouters_id[id(network_element)] = network_element
-            self.mxrouters[name] = network_element
-
+    def delete_fabric_interface(self, name, fi_intf):
         #physical-router
         pr = None
         try:
             pr = self._vnc_lib.physical_router_read(fq_name=[self._args.admin_tenant_group, \
-                                                    network_element._name])
+                                                    name])
         except NoIdError:
             print 'phy-router lookup failed'
             return
@@ -511,9 +535,9 @@ class MxRouter(object):
         fi = None
         try:
             fi = self._vnc_lib.fabric_interface_read(fq_name=[self._args.admin_tenant_group, \
-                                                     network_element._name, fi_intf])
+			    name, fi_intf])
         except NoIdError:
-            print 'fi-intf lookup failed'
+	    print 'fi-intf lookup failed'
             return
 
         fi_id = self._vnc_lib.fabric_interface_delete(fi.get_fq_name())
@@ -522,13 +546,7 @@ class MxRouter(object):
 
     # end delete_fabric_interface
 
-    def add_child_intefaces_to_fabric(self, name, mgmt_ip, fi_intf, fab_phy_intfs):
-        network_element = self.mxrouters.get(name)
-        if not network_element:
-            network_element = NetworkElement(name, mgmt_ip)
-            self.mxrouters_id[id(network_element)] = network_element
-            self.mxrouters[name] = network_element
-
+    def add_child_interfaces_to_fabric(self, name, fi_intf, fab_phy_intfs):
         if not fab_phy_intfs:
             fab_phy_intfs = self._args.fab_phy_intfs
 
@@ -536,7 +554,7 @@ class MxRouter(object):
         pr = None
         try:
             pr = self._vnc_lib.physical_router_read(fq_name=[self._args.admin_tenant_group, \
-                                                    network_element._name])
+                                                    name])
         except NoIdError:
             print 'phy-router lookup failed'
             return
@@ -545,7 +563,7 @@ class MxRouter(object):
         fi = None
         try:
             fi = self._vnc_lib.fabric_interface_read(fq_name=[self._args.admin_tenant_group, \
-			    network_element._name, fi_intf])
+                                                     name, fi_intf])
         except NoIdError:
             print 'fabric-intf lookup failed'
             return
@@ -556,24 +574,34 @@ class MxRouter(object):
         if cfi:
             cfi = FabricInterfaceType('cfi', fab_phy_intfs)
         else:
-            print 'child fabric-interfaces exist'
+            print 'child fabric-interfaces exist, adding more child to it'
             cfi = FabricInterfaceType('cfi', fab_phy_intfs)
 
         fi.set_fabric_child_interfaces(cfi)
+        #physical-interface-type update
+        if cfi is not None:
+            cfi_list = cfi.get_fabric_physical_interface()
+            for cfi_entry in cfi_list:
+                pi = None
+                try:
+                    pi = self._vnc_lib.physical_interface_read(fq_name=[self._args.admin_tenant_group, \
+			    name, cfi_entry])
+                except NoIdError:
+	            print 'phy-intf lookup failed'
+                    continue;
+                if pi:
+                    phy_intf_type = PhysicalInterfaceType('gigether-options', fi_intf);
+                    pi.set_physical_interface_type(phy_intf_type)
+                    self._vnc_lib.physical_interface_update(pi)
+
         self._vnc_lib.fabric_interface_update(fi)
 
         # Do we need physical-router update???
         self._vnc_lib.physical_router_update(pr)
 
-    # end add_child_inteface_to_fabric
+    # end add_child_interfaces_to_fabric
 
-    def del_child_intefaces_from_fabric(self, name, mgmt_ip, fi_intf, fab_phy_intfs):
-        network_element = self.mxrouters.get(name)
-        if not network_element:
-            network_element = NetworkElement(name, mgmt_ip)
-            self.mxrouters_id[id(network_element)] = network_element
-            self.mxrouters[name] = network_element
-
+    def delete_child_interfaces_from_fabric(self, name, fi_intf, fab_phy_intfs):
         if not fab_phy_intfs:
             fab_phy_intfs = self._args.fab_phy_intfs
 
@@ -581,7 +609,7 @@ class MxRouter(object):
         pr = None
         try:
             pr = self._vnc_lib.physical_router_read(fq_name=[self._args.admin_tenant_group, \
-                                                    network_element._name])
+			    name])
         except NoIdError:
             print 'phy-router lookup failed'
             return
@@ -590,7 +618,7 @@ class MxRouter(object):
         fi = None
         try:
             fi = self._vnc_lib.fabric_interface_read(fq_name=[self._args.admin_tenant_group, \
-                                                     network_element._name, fi_intf])
+			    name, fi_intf])
         except NoIdError:
             print 'fabric-intf lookup failed'
             return
@@ -599,101 +627,836 @@ class MxRouter(object):
         cfi = fi.get_fabric_child_interfaces()
 
         if cfi:
-            print 'child fabric-interfaces exist'
+            print 'child fabric-interfaces exist for deletion'
             #cfi.delete_fabric_physical_interface(fab_phy_intfs[0])
             #cfi.delete_fabric_physical_interface(fab_phy_intfs[1])
         else:
-            print 'no child fabric-interfaces exist'
+            print 'no child fabric-interfaces exist, will delete none'
             return
 
-        #import pdb; pdb.set_trace()
         fi.set_fabric_child_interfaces([])
         self._vnc_lib.fabric_interface_update(fi)
 
         # Do we need physical-router update???
         self._vnc_lib.physical_router_update(pr)
 
-    # end del_child_intefaces_from_fabric
+    # end delete_child_interfaces_from_fabric
 
-    def addService(self, name, mgmt_ip, service_vlan):
-        network_element = self.mxrouters.get(name)
-        if not network_element:
-            network_element = NetworkElement(name, mgmt_ip)
-            self.mxrouters_id[id(network_element)] = network_element
-            self.mxrouters[name] = network_element
+    def addService(self, access_name, access_rtr_id, access_intf, fi_intf, service_vlans, service_name, service_rtr_id):
+        enable_service = False
+        #physical-router
+        mx_type = 'access'
+        if mx_type is 'access':
+            pr_access = None
+            try:
+                pr_access = self._vnc_lib.physical_router_read(fq_name=[self._args.admin_tenant_group, \
+			    access_name])
+            except NoIdError:
+	        print 'phy-router access lookup failed'
+                return
+            #physical-interface
+            pi_access = None
+            try:
+                pi_access = self._vnc_lib.physical_interface_read(fq_name=[self._args.admin_tenant_group, \
+			        access_name, access_intf])
+            except NoIdError:
+	        print 'access_intf lookup on access failed'
+                return
+            if pr_access.physical_router_mx_type != 'access':
+	        pr_access.set_physical_router_mx_type('access')
+                self._vnc_lib.physical_router_update(pr_access)
+                #physical-interface-type
+                pi_access.set_physical_interface_encap_type('ethernet-ccc')
+                self._vnc_lib.physical_interface_update(pi_access)
+            #1. create logical-interface (access-port)
+            access_li_ifl = access_intf + '.0'
+            connect_vlan = None
+            li_encap_type = None
+            li_family = 'ccc'
+            li_ipaddress = None
+            #logical-interface
+            li = None
+            try:
+                li = self._vnc_lib.logical_interface_read(fq_name=[self._args.admin_tenant_group, \
+			        access_name, access_intf, access_li_ifl])
+            except NoIdError:
+                pass
+       
+            if li is None:
+	        self.add_network_logical_interfaces(access_name, access_intf, \
+			        access_li_ifl, connect_vlan, li_encap_type, li_family, li_ipaddress)
+            #2. create logical-interface (fi)
+            connect_vlan = None
+            li_encap_type = None
+            li_family = 'inet'
+            li_ipaddress_base = '200.0.0.1/24'
+            incr_val = int(filter(str.isdigit, fi_intf))
+            incr_val += 200
+            li_ipaddress_base = li_ipaddress_base.replace("200", str(incr_val))
+            #li_ipaddress = '201.0.0.1/24'
+            li_ipaddress = li_ipaddress_base;
+            fi_li_ifl = fi_intf + '.0'
+            #logical-interface
+            li = None
+            try:
+                li = self._vnc_lib.logical_interface_read(fq_name=[self._args.admin_tenant_group, \
+			        access_name, fi_intf, fi_li_ifl])
+            except NoIdError:
+                pass
+       
+            if li is None:
+	        self.add_network_logical_fi_interfaces(access_name, fi_intf, \
+			        fi_li_ifl, connect_vlan, li_encap_type, li_family, li_ipaddress)
+            #3. create logical-interface (lo0)
+            connect_vlan = None
+            li_encap_type = None
+            li_family = 'inet'
+            lo0_intf = 'lo0'
+            lo0_ifl = lo0_intf + '.0'
+            li = None
+            try:
+                li = self._vnc_lib.logical_interface_read(fq_name=[self._args.admin_tenant_group, \
+			        access_name, lo0_intf, lo0_ifl])
+            except NoIdError:
+                pass
+       
+            if li is None:
+	        self.add_network_logical_interfaces(access_name, lo0_intf, \
+			        lo0_ifl, connect_vlan, li_encap_type, li_family, access_rtr_id)
+        #end of 'access'
+
+        pr_service = None
+        try:
+            pr_service = self._vnc_lib.physical_router_read(fq_name=[self._args.admin_tenant_group, \
+			    service_name])
+        except NoIdError:
+	    print 'phy-router service lookup failed'
+            return
+ 
+        mx_type = 'service'
+        access_intf = 'fi0'
+        service_intf = 'ps0'
+        if mx_type is 'service':
+            #fabric-interface
+            pi_service = None
+            try:
+                pi_service = self._vnc_lib.fabric_interface_read(fq_name=[self._args.admin_tenant_group, \
+			        service_name, access_intf])
+            except NoIdError:
+	        print 'access_intf lookup on service failed'
+                return
+            if pr_service.physical_router_mx_type != 'service':
+	        pr_service.set_physical_router_mx_type('service')
+                self._vnc_lib.physical_router_update(pr_service)
+            #1. create logical-interface (fi)
+            access_li_ifl = access_intf + '.0'
+            connect_vlan = None
+            li_encap_type = None
+            li_family = 'inet'
+            li_ipaddress_base = '200.0.0.2/24'
+            incr_val = int(filter(str.isdigit, fi_intf))
+            incr_val += 200
+            li_ipaddress_base = li_ipaddress_base.replace("200", str(incr_val))
+            #li_ipaddress = '201.0.0.2/24'
+            li_ipaddress = li_ipaddress_base;
+            li = None
+            try:
+                li = self._vnc_lib.logical_interface_read(fq_name=[self._args.admin_tenant_group, \
+			        service_name, access_intf, access_li_ifl])
+            except NoIdError:
+                pass
+       
+            if li is None:
+	        self.add_network_logical_fi_interfaces(service_name, access_intf, \
+			        access_li_ifl, connect_vlan, li_encap_type, li_family, li_ipaddress)
+            #2. create logical-interface (ps)
+            #physical-interface
+            pi_svc = None
+            try:
+                pi_svc = self._vnc_lib.physical_interface_read(fq_name=[self._args.admin_tenant_group, \
+			        service_name, service_intf])
+            except NoIdError:
+                pass
+            if pi_svc is None:
+                pi_svc = PhysicalInterface(service_intf, parent_obj = pr_service)
+                pi_id = self._vnc_lib.physical_interface_create(pi_svc)
+                #update physical-router
+                self._vnc_lib.physical_router_update(pr_service)
+            connect_vlan = None
+            li_encap_type = 'ethernet-ccc'
+            li_family = None
+            service_li_ifl = service_intf + '.0'
+            li_ipaddress = None
+            #logical-interface-1
+            li = None
+            try:
+                li = self._vnc_lib.logical_interface_read(fq_name=[self._args.admin_tenant_group, \
+			        service_name, service_intf, service_li_ifl])
+            except NoIdError:
+                pass
+       
+            if li is None:
+	        self.add_network_logical_interfaces(service_name, service_intf, \
+			                            service_li_ifl, connect_vlan, \
+                                                    li_encap_type, li_family,  \
+                                                    li_ipaddress)
+            connect_vlan = 0
+            incr = 0
+            pi_svc_intf_count = len(pi_svc.get_logical_interfaces())
+            enable_service = pi_svc_intf_count == 1
+            pi_svc_intf_base = pi_svc_intf_count;
+            pi_svc_intf_count += 109
+            #walk thro's service vlan's and program 'ps' service ifls
+            for connect_vlan in service_vlans:
+                li_encap_type = None
+                li_ipaddress_base = '110.0.0.1/24'
+                incr_val = pi_svc_intf_count + incr
+                li_ipaddress_base = li_ipaddress_base.replace("110", str(incr_val))
+                li_ipaddress = li_ipaddress_base
+                li_family = 'inet'
+                service_li_ifl = service_intf + '.' + str(pi_svc_intf_base)
+                li = None
+                try:
+                    li = self._vnc_lib.logical_interface_read(fq_name=[self._args.admin_tenant_group, \
+			            service_name, service_intf, service_li_ifl])
+                except NoIdError:
+                    pass
+       
+                if li is None:
+	            self.add_network_logical_interfaces(service_name, service_intf, \
+			            service_li_ifl, connect_vlan, li_encap_type, li_family, li_ipaddress)
+                incr +=1
+                pi_svc_intf_base += incr
+            #end of service-vlans
+
+            #3. create logical-interface (lo0)
+            connect_vlan = None
+            li_encap_type = None
+            li_family = 'inet'
+            lo0_intf = 'lo0'
+            lo0_ifl = lo0_intf + '.0'
+            li = None
+            try:
+                li = self._vnc_lib.logical_interface_read(fq_name=[self._args.admin_tenant_group, \
+			        service_name, lo0_intf, lo0_ifl])
+            except NoIdError:
+                pass
+       
+            if li is None:
+	        self.add_network_logical_interfaces(service_name, lo0_intf, \
+			        lo0_ifl, connect_vlan, li_encap_type, li_family, service_rtr_id)
+        #end of 'service'
+        #Add and activate the service now
+        service_router_id = service_rtr_id.split('/', 1)
+        access_router_id = access_rtr_id.split('/', 1)
+        if enable_service:
+            self.activateService(access_name, service_name, access_router_id[0], service_router_id[0])
+
+    # end addServiceInternal
+
+    def addServiceInternal(self, name, mx_type, access_intf, service_intf, service_vlans, lo0_ip):
 
         #physical-router
         pr = None
         try:
             pr = self._vnc_lib.physical_router_read(fq_name=[self._args.admin_tenant_group, \
-                                                    network_element._name])
+			    name])
         except NoIdError:
-            print 'phy-router lookup failed'
+	    print 'phy-router lookup failed'
             return
+ 
+        if mx_type is 'access':
+            #physical-interface
+            pi = None
+            try:
+                pi = self._vnc_lib.physical_interface_read(fq_name=[self._args.admin_tenant_group, \
+			        name, access_intf])
+            except NoIdError:
+	        print 'access_intf lookup on access failed'
+                return
+            if pr.physical_router_mx_type != 'access':
+	        pr.set_physical_router_mx_type('access')
+                self._vnc_lib.physical_router_update(pr)
+            #physical-interface-type
+            pi.set_physical_interface_encap_type('ethernet-ccc')
+            self._vnc_lib.physical_interface_update(pi)
+            #1. create logical-interface (access-port)
+            access_li_ifl = access_intf + '.0'
+            connect_vlan = None
+            li_encap_type = None
+            li_family = 'ccc'
+            li_ipaddress = None
+            #logical-interface
+            li = None
+            try:
+                li = self._vnc_lib.logical_interface_read(fq_name=[self._args.admin_tenant_group, \
+			        name, access_intf, access_li_ifl])
+            except NoIdError:
+                pass
+       
+            if li is None:
+	        self.add_network_logical_interfaces(name, access_intf, \
+			        access_li_ifl, connect_vlan, li_encap_type, li_family, li_ipaddress)
+            #2. create logical-interface (fi)
+            connect_vlan = None
+            li_encap_type = None
+            li_family = 'inet'
+            li_ipaddress_base = '200.0.0.1/24'
+            incr_val = int(filter(str.isdigit, access_intf))
+            incr_val += 200
+            li_ipaddress_base = li_ipaddress_base.replace("200", str(incr_val))
+            #li_ipaddress = '201.0.0.1/24'
+            li_ipaddress = li_ipaddress_base;
+            service_li_ifl = service_intf + '.0'
+            #logical-interface
+            li = None
+            try:
+                li = self._vnc_lib.logical_interface_read(fq_name=[self._args.admin_tenant_group, \
+			        name, service_intf, service_li_ifl])
+            except NoIdError:
+                pass
+       
+            if li is None:
+	        self.add_network_logical_fi_interfaces(name, service_intf, \
+			        service_li_ifl, connect_vlan, li_encap_type, li_family, li_ipaddress)
+            #3. create logical-interface (lo0)
+            connect_vlan = None
+            li_encap_type = None
+            li_family = 'inet'
+            lo0_intf = 'lo0'
+            lo0_ifl = lo0_intf + '.0'
+            li = None
+            try:
+                li = self._vnc_lib.logical_interface_read(fq_name=[self._args.admin_tenant_group, \
+			        name, lo0_intf, lo0_ifl])
+            except NoIdError:
+                pass
+       
+            if li is None:
+	        self.add_network_logical_interfaces(name, lo0_intf, \
+			        lo0_ifl, connect_vlan, li_encap_type, li_family, lo0_ip)
 
-    # end addService
+        if mx_type is 'service':
+            #fabric-interface
+            pi = None
+            try:
+                pi = self._vnc_lib.fabric_interface_read(fq_name=[self._args.admin_tenant_group, \
+			        name, access_intf])
+            except NoIdError:
+	        print 'access_intf lookup on service failed'
+                return
+            if pr.physical_router_mx_type != 'service':
+	        pr.set_physical_router_mx_type('service')
+                self._vnc_lib.physical_router_update(pr)
+            #1. create logical-interface (fi)
+            access_li_ifl = access_intf + '.0'
+            connect_vlan = None
+            li_encap_type = None
+            li_family = 'inet'
+            li_ipaddress_base = '200.0.0.2/24'
+            incr_val = int(filter(str.isdigit, name))
+            incr_val += 200
+            li_ipaddress_base = li_ipaddress_base.replace("200", str(incr_val))
+            #li_ipaddress = '201.0.0.2/24'
+            li_ipaddress = li_ipaddress_base;
+            li = None
+            try:
+                li = self._vnc_lib.logical_interface_read(fq_name=[self._args.admin_tenant_group, \
+			        name, access_intf, access_li_ifl])
+            except NoIdError:
+                pass
+       
+            if li is None:
+	        self.add_network_logical_fi_interfaces(name, access_intf, \
+			        access_li_ifl, connect_vlan, li_encap_type, li_family, li_ipaddress)
+            #2. create logical-interface (ps)
+            #physical-interface
+            pi_svc = None
+            try:
+                pi_svc = self._vnc_lib.physical_interface_read(fq_name=[self._args.admin_tenant_group, \
+			        name, service_intf])
+            except NoIdError:
+                pass
+            if pi_svc is None:
+                pi_svc = PhysicalInterface(service_intf, parent_obj = pr)
+                pi_id = self._vnc_lib.physical_interface_create(pi_svc)
+                #update physical-router
+                self._vnc_lib.physical_router_update(pr)
+            connect_vlan = None
+            li_encap_type = 'ethernet-ccc'
+            li_family = None
+            service_li_ifl = service_intf + '.0'
+            li_ipaddress = None
+            #logical-interface-1
+            li = None
+            try:
+                li = self._vnc_lib.logical_interface_read(fq_name=[self._args.admin_tenant_group, \
+			        name, service_intf, service_li_ifl])
+            except NoIdError:
+                pass
+       
+            if li is None:
+	        self.add_network_logical_interfaces(name, service_intf, \
+			                            service_li_ifl, connect_vlan, \
+                                                    li_encap_type, li_family,  \
+                                                    li_ipaddress)
+            #logical-interface-2
+            li_encap_type = None
+            li_ipaddress = '110.0.0.1/24'
+            li_family = 'inet'
+            connect_vlan = '100'
+            service_li_ifl = service_intf + '.1'
+            li = None
+            try:
+                li = self._vnc_lib.logical_interface_read(fq_name=[self._args.admin_tenant_group, \
+			        name, service_intf, service_li_ifl])
+            except NoIdError:
+                pass
+       
+            if li is None:
+	        self.add_network_logical_interfaces(name, service_intf, \
+			        service_li_ifl, connect_vlan, li_encap_type, li_family, li_ipaddress)
+            #logical-interface-2
+            li_ipaddress = '111.0.0.1/24'
+            service_li_ifl = service_intf + '.2'
+            connect_vlan = '101'
+            li = None
+            try:
+                li = self._vnc_lib.logical_interface_read(fq_name=[self._args.admin_tenant_group, \
+			        name, service_intf, service_li_ifl])
+            except NoIdError:
+                pass
+       
+            if li is None:
+	        self.add_network_logical_interfaces(name, service_intf, \
+			        service_li_ifl, connect_vlan, li_encap_type, li_family, li_ipaddress)
+            #3. create logical-interface (lo0)
+            connect_vlan = None
+            li_encap_type = None
+            li_family = 'inet'
+            lo0_intf = 'lo0'
+            lo0_ifl = lo0_intf + '.0'
+            li = None
+            try:
+                li = self._vnc_lib.logical_interface_read(fq_name=[self._args.admin_tenant_group, \
+			        name, lo0_intf, lo0_ifl])
+            except NoIdError:
+                pass
+       
+            if li is None:
+	        self.add_network_logical_interfaces(name, lo0_intf, \
+			        lo0_ifl, connect_vlan, li_encap_type, li_family, lo0_ip)
 
-    def removeService(self, name, mgmt_ip, service_vlan):
-        network_element_svc = self.mxrouters.get(name)
+    # end addServiceInternal
 
-        if not network_element_svc:
-            print 'ne svc not present'
-            return
+    def activateService(self, access_name, service_name, access_rtr_id, service_rtr_id):
 
-        #physical-router
-        pr = None
+        #physical-router-access
+        pr_access = None
         try:
-            pr = self._vnc_lib.physical_router_read(fq_name=[self._args.admin_tenant_group, \
-                                                    network_element_svc._name])
+            pr_access = self._vnc_lib.physical_router_read(fq_name=[self._args.admin_tenant_group, \
+			    access_name])
         except NoIdError:
-            print 'phy-router lookup failed'
+	    print 'phy-router lookup failed'
             return
 
-    # end removeService
+        #routing-protocols
+        routing = None
+        try:
+            routing = self._vnc_lib.routing_protocols_read(fq_name=[access_name])
+        except NoIdError:
+	    print 'routing-protocols doesnt exist- create one'
+            pass
+	if not routing:
+	    routing = RoutingProtocols(name=access_name)
 
-    def moveService(self, access_name, from_svc_name, to_svc_name):
-        network_element_access = self.mxrouters.get(access_name)
-        network_element_from_svc = self.mxrouters.get(from_svc_name)
-        network_element_to_svc = self.mxrouters.get(to_svc_name)
+            #physical-interface, fabric-interface list
+            phy_intf_list, fi_intf_list = self.get_pi_fi_list(pr_access)
+            if phy_intf_list is None or fi_intf_list is None:
+	        print 'no interfaces to enable'
+                return
+            #ldp
+	    ldp_params = LdpProtocolParams(phy_intf_list)
+            routing.set_routing_protocol_ldp(ldp_params)
+            #ospf
+            ospf_params = OspfProtocolParams()
+            ospf_params.area = '0.0.0.0'
+            ospf_params.interface_name = phy_intf_list
+            routing.set_routing_protocol_ospf(ospf_params)
+            #mpls
+            mpls_params = MplsProtocolParams(fi_intf_list)
+            routing.set_routing_protocol_mpls(mpls_params)
+            #l2-ckt
+            l2ckt_params = L2cktProtocolParams()
+            l2ckt_params.virtual_ckt_id = 1
+            l2ckt_params.identifier = service_rtr_id
+            l2ckt_params.interface_name = 'ge-0/0/0.0'
+            routing.set_routing_protocol_l2ckt(l2ckt_params)
+            self._vnc_lib.routing_protocols_create(routing)
+            #pr_access.set_routing_protocols(routing)
 
-        if not network_element_access:
-            print 'ne access not present'
+        pr_access.set_routing_protocols(routing)
+        pr_id = self._vnc_lib.physical_router_update(pr_access)
+
+
+        #physical-router-service
+        pr_service = None
+        try:
+            pr_service = self._vnc_lib.physical_router_read(fq_name=[self._args.admin_tenant_group, \
+			    service_name])
+        except NoIdError:
+	    print 'phy-router lookup failed'
             return
 
-        if not network_element_from_svc:
-            print 'ne from_svc not present'
-            return
+        #routing-protocols
+        routing = None
+        try:
+            routing = self._vnc_lib.routing_protocols_read(fq_name=[service_name])
+        except NoIdError:
+	    print 'routing-protocols doesnt exist- create one'
+            pass
+	if not routing:
+	    routing = RoutingProtocols(name=service_name)
 
-        if not network_element_to_svc:
-            print 'ne to_svc not present'
-            return
+            #physical-interface, fabric-interface list
+            phy_intf_list, fi_intf_list = self.get_pi_fi_list(pr_service)
+            if phy_intf_list is None or fi_intf_list is None:
+	        print 'no interfaces to enable'
+                return
+            #ldp
+	    ldp_params = LdpProtocolParams(phy_intf_list)
+            routing.set_routing_protocol_ldp(ldp_params)
+            #ospf
+            ospf_params = OspfProtocolParams()
+            ospf_params.area = '0.0.0.0'
+            ospf_params.interface_name = phy_intf_list
+            routing.set_routing_protocol_ospf(ospf_params)
+            #mpls
+            mpls_params = MplsProtocolParams(fi_intf_list)
+            routing.set_routing_protocol_mpls(mpls_params)
+            #l2-ckt
+            l2ckt_params = L2cktProtocolParams()
+            l2ckt_params.virtual_ckt_id = 1
+            l2ckt_params.identifier = access_rtr_id
+            l2ckt_params.interface_name = 'ps0.0'
+            routing.set_routing_protocol_l2ckt(l2ckt_params)
+            self._vnc_lib.routing_protocols_create(routing)
+            #pr_service.set_routing_protocols(routing)
+
+        pr_service.set_routing_protocols(routing)
+        pr_id = self._vnc_lib.physical_router_update(pr_service)
+
+    # end activateService
+
+    def moveService(self, access_name, access_rtr_id, access_intf, fi_intf, service_vlans, service_name, service_rtr_id):
 
         #physical-router
         pr_access = None
         try:
             pr_access = self._vnc_lib.physical_router_read(fq_name=[self._args.admin_tenant_group, \
-                                                           network_element_access._name])
+			    access_name])
         except NoIdError:
-            print 'phy-router lookup failed'
+	    print 'phy-router access lookup failed'
             return
-        #physical-router
-        pr_from_svc = None
+ 
+        mx_type = 'access'
+        if mx_type is 'access':
+            #physical-interface
+            pi_access = None
+            try:
+                pi_access = self._vnc_lib.physical_interface_read(fq_name=[self._args.admin_tenant_group, \
+			        access_name, access_intf])
+            except NoIdError:
+	        print 'access_intf lookup on access failed'
+                return
+            if pr_access.physical_router_mx_type != 'access':
+	        pr_access.set_physical_router_mx_type('access')
+                self._vnc_lib.physical_router_update(pr_access)
+                #physical-interface-type
+                pi_access.set_physical_interface_encap_type('ethernet-ccc')
+                self._vnc_lib.physical_interface_update(pi_access)
+            #2. create logical-interface (fi)
+            connect_vlan = None
+            li_encap_type = None
+            li_family = 'inet'
+            li_ipaddress_base = '200.0.0.1/24'
+            incr_val = int(filter(str.isdigit, fi_intf))
+            incr_val += 200
+            li_ipaddress_base = li_ipaddress_base.replace("200", str(incr_val))
+            #li_ipaddress = '201.0.0.1/24'
+            li_ipaddress = li_ipaddress_base;
+            fi_li_ifl = fi_intf + '.0'
+            #logical-interface
+            li = None
+            try:
+                li = self._vnc_lib.logical_interface_read(fq_name=[self._args.admin_tenant_group, \
+			        access_name, fi_intf, fi_li_ifl])
+            except NoIdError:
+                pass
+       
+            if li is None:
+	        self.add_network_logical_fi_interfaces(access_name, fi_intf, \
+			        fi_li_ifl, connect_vlan, li_encap_type, li_family, li_ipaddress)
+        #end of 'access'
+
+        pr_service = None
         try:
-            pr_from_svc = self._vnc_lib.physical_router_read(fq_name=[self._args.admin_tenant_group, \
-                                                             network_element_access._name])
+            pr_service = self._vnc_lib.physical_router_read(fq_name=[self._args.admin_tenant_group, \
+			    service_name])
         except NoIdError:
-            print 'phy-router lookup failed'
+	    print 'phy-router service lookup failed'
             return
-        #physical-router
-        pr_to_svc = None
-        try:
-            pr_to_svc = self._vnc_lib.physical_router_read(fq_name=[self._args.admin_tenant_group, \
-                                                           network_element_access._name])
-        except NoIdError:
-            print 'phy-router lookup failed'
-            return
+ 
+        mx_type = 'service'
+        #service should always have one 'fi' and one 'ps(for now)'
+        access_intf = 'fi0'
+        service_intf = 'ps0'
+        if mx_type is 'service':
+            #fabric-interface
+            pi_service = None
+            try:
+                pi_service = self._vnc_lib.fabric_interface_read(fq_name=[self._args.admin_tenant_group, \
+			        service_name, access_intf])
+            except NoIdError:
+	        print 'access_intf lookup on service failed'
+                return
+            if pr_service.physical_router_mx_type != 'service':
+	        pr_service.set_physical_router_mx_type('service')
+                self._vnc_lib.physical_router_update(pr_service)
+            #1. create logical-interface (fi)
+            access_li_ifl = access_intf + '.0'
+            connect_vlan = None
+            li_encap_type = None
+            li_family = 'inet'
+            li_ipaddress_base = '200.0.0.2/24'
+            incr_val = int(filter(str.isdigit, fi_intf))
+            incr_val += 200
+            li_ipaddress_base = li_ipaddress_base.replace("200", str(incr_val))
+            #li_ipaddress = '201.0.0.2/24'
+            li_ipaddress = li_ipaddress_base;
+            li = None
+            try:
+                li = self._vnc_lib.logical_interface_read(fq_name=[self._args.admin_tenant_group, \
+			        service_name, access_intf, access_li_ifl])
+            except NoIdError:
+                pass
+       
+            if li is None:
+	        self.add_network_logical_fi_interfaces(service_name, access_intf, \
+			        access_li_ifl, connect_vlan, li_encap_type, li_family, li_ipaddress)
+            #2. create logical-interface (ps)
+            #physical-interface
+            pi_svc = None
+            try:
+                pi_svc = self._vnc_lib.physical_interface_read(fq_name=[self._args.admin_tenant_group, \
+			        service_name, service_intf])
+            except NoIdError:
+                pass
+            if pi_svc is None:
+                pi_svc = PhysicalInterface(service_intf, parent_obj = pr_service)
+                pi_id = self._vnc_lib.physical_interface_create(pi_svc)
+                #update physical-router
+                self._vnc_lib.physical_router_update(pr_service)
+            self._vnc_lib.physical_router_update(pr_service)
+            connect_vlan = None
+            li_encap_type = 'ethernet-ccc'
+            li_family = None
+            service_li_ifl = service_intf + '.0'
+            li_ipaddress = None
+            #logical-interface-1
+            li = None
+            try:
+                li = self._vnc_lib.logical_interface_read(fq_name=[self._args.admin_tenant_group, \
+			        service_name, service_intf, service_li_ifl])
+            except NoIdError:
+                pass
+       
+            if li is None:
+	        self.add_network_logical_interfaces(service_name, service_intf, \
+			                            service_li_ifl, connect_vlan, \
+                                                    li_encap_type, li_family,  \
+                                                    li_ipaddress)
+            connect_vlan = 0
+            incr = 0
+            pi_svc_intf_count = len(pi_svc.get_logical_interfaces())
+            pi_svc_intf_base = pi_svc_intf_count;
+            pi_svc_intf_count += 109
+            #walk thro's service vlan's and program 'ps' service ifls
+            for connect_vlan in service_vlans:
+                li_encap_type = None
+                li_ipaddress_base = '110.0.0.1/24'
+                incr_val = pi_svc_intf_count + incr
+                li_ipaddress_base = li_ipaddress_base.replace("110", str(incr_val))
+                li_ipaddress = li_ipaddress_base
+                li_family = 'inet'
+                service_li_ifl = service_intf + '.' + str(pi_svc_intf_base)
+                li = None
+                try:
+                    li = self._vnc_lib.logical_interface_read(fq_name=[self._args.admin_tenant_group, \
+			            service_name, service_intf, service_li_ifl])
+                except NoIdError:
+                    pass
+       
+                if li is None:
+	            self.add_network_logical_interfaces(service_name, service_intf, \
+			            service_li_ifl, connect_vlan, li_encap_type, li_family, li_ipaddress)
+                incr +=1
+                pi_svc_intf_base += incr
+            #end of service-vlans
+
+            #3. create logical-interface (lo0)
+            connect_vlan = None
+            li_encap_type = None
+            li_family = 'inet'
+            lo0_intf = 'lo0'
+            lo0_ifl = lo0_intf + '.0'
+            li = None
+            try:
+                li = self._vnc_lib.logical_interface_read(fq_name=[self._args.admin_tenant_group, \
+			        service_name, lo0_intf, lo0_ifl])
+            except NoIdError:
+                pass
+       
+            if li is None:
+	        self.add_network_logical_interfaces(service_name, lo0_intf, \
+			        lo0_ifl, connect_vlan, li_encap_type, li_family, service_rtr_id)
+        #end of 'service'
+        #Move the service now
+        service_router_id = service_rtr_id.split('/', 1)
+        access_router_id = access_rtr_id.split('/', 1)
+        self.moveServiceInternal(access_name, service_name, access_router_id[0], service_router_id[0])
 
     # end moveService
+
+    def moveServiceInternal(self, access_name, svc_name, access_rtr_id, service_rtr_id):
+
+        #physical-router-access
+        pr_access = None
+        try:
+            pr_access = self._vnc_lib.physical_router_read(fq_name=[self._args.admin_tenant_group, \
+			    access_name])
+        except NoIdError:
+	    print 'phy-router lookup failed'
+            return
+
+        #routing-protocols
+        routing = None
+        try:
+            routing = self._vnc_lib.routing_protocols_read(fq_name=[access_name])
+        except NoIdError:
+	    print 'access- routing-protocols lookup failed'
+            return
+
+        #physical-interface, fabric-interface list
+        phy_intf_list, fi_intf_list = self.get_pi_fi_list(pr_access)
+        if phy_intf_list is None or fi_intf_list is None:
+	    print 'no interfaces to enable'
+            return
+
+        #ldp
+	ldp_params = LdpProtocolParams(phy_intf_list)
+        routing.set_routing_protocol_ldp(ldp_params)
+        #ospf
+        ospf_params = OspfProtocolParams()
+        ospf_params.area = '0.0.0.0'
+        ospf_params.interface_name = phy_intf_list
+        routing.set_routing_protocol_ospf(ospf_params)
+        #mpls
+        mpls_params = MplsProtocolParams(fi_intf_list)
+        routing.set_routing_protocol_mpls(mpls_params)
+        #l2-ckt
+        l2ckt_params = L2cktProtocolParams()
+        l2ckt_params.virtual_ckt_id = 1
+        l2ckt_params.identifier = service_rtr_id
+        l2ckt_params.interface_name = 'ge-0/0/0.0'
+        routing.set_routing_protocol_l2ckt(l2ckt_params)
+        self._vnc_lib.routing_protocols_update(routing)
+
+        pr_id = self._vnc_lib.physical_router_update(pr_access)
+
+        #physical-router-service
+        pr_service = None
+        try:
+            pr_service = self._vnc_lib.physical_router_read(fq_name=[self._args.admin_tenant_group, \
+			    svc_name])
+        except NoIdError:
+	    print 'phy-router lookup failed'
+            return
+
+        #routing-protocols
+        routing = None
+        try:
+            routing = self._vnc_lib.routing_protocols_read(fq_name=[svc_name])
+        except NoIdError:
+	    print 'routing-protocols doesnt exist- create one'
+            pass
+	if not routing:
+	    routing = RoutingProtocols(name=svc_name)
+
+            #physical-interface, fabric-interface list
+            phy_intf_list, fi_intf_list = self.get_pi_fi_list(pr_service)
+            if phy_intf_list is None or fi_intf_list is None:
+	        print 'no interfaces to enable'
+                return
+            #ldp
+	    ldp_params = LdpProtocolParams(phy_intf_list)
+            routing.set_routing_protocol_ldp(ldp_params)
+            #ospf
+            ospf_params = OspfProtocolParams()
+            ospf_params.area = '0.0.0.0'
+            ospf_params.interface_name = phy_intf_list
+            routing.set_routing_protocol_ospf(ospf_params)
+            #mpls
+            mpls_params = MplsProtocolParams(fi_intf_list)
+            routing.set_routing_protocol_mpls(mpls_params)
+            #l2-ckt
+            l2ckt_params = L2cktProtocolParams()
+            l2ckt_params.virtual_ckt_id = 1
+            l2ckt_params.identifier = access_rtr_id
+            l2ckt_params.interface_name = 'ps0.0'
+            routing.set_routing_protocol_l2ckt(l2ckt_params)
+            self._vnc_lib.routing_protocols_create(routing)
+            pr_service.set_routing_protocols(routing)
+
+        pr_id = self._vnc_lib.physical_router_update(pr_service)
+ 
+    # end moveServiceInternal
+
+    def deleteService(self, access_name, acces_rtr_id, access_intf, fi_intf, service_vlans, service_name, service_rtr_id):
+        print "deleteService called"
+
+    # end deleteService
+
+    def get_pi_fi_list(self, pr):
+        #physical-interface
+        phy_intf_list = pr.get_physical_interfaces()
+        pi_list = [];
+        fi_list = [];
+        pi_fi_name = None
+        if phy_intf_list is not None:
+	    for phy in phy_intf_list:
+                try:
+                    pi = self._vnc_lib.physical_interface_read(fq_name=phy['to'])
+                except NoIdError:
+                    continue
+                if pi.name.startswith("lo0"):
+                    pi_fi_name = str(pi.name) + ".0"
+                    pi_list.append(pi_fi_name)
+        #fabric-interface
+        fi_intf_list = pr.get_fabric_interfaces()
+        if fi_intf_list is not None:
+	    for fi in fi_intf_list:
+                try:
+                    fi_intf = self._vnc_lib.fabric_interface_read(fq_name=fi['to'])
+                except NoIdError:
+                    continue
+                if fi_intf.name.startswith("fi"):
+                    pi_fi_name = str(fi_intf.name) + ".0"
+                    pi_list.append(pi_fi_name)
+                    fi_list.append(pi_fi_name)
+        return pi_list, fi_list
+
+    # end get_pi_fi_list
 
     def _parse_args(self, args_str):
         '''
@@ -720,7 +1483,7 @@ class MxRouter(object):
             'admin_user': 'admin',
             'admin_password': 'secret123',
             'admin_tenant_name': 'default-domain',
-        }
+	}
         default_misc = {
             'admin_tenant_group': 'default-global-system-config',
             'admin_tenant_project': 'default-project',
@@ -731,13 +1494,13 @@ class MxRouter(object):
             'physical_intfs': ['ge-0/0/0', 'ge-0/0/1'],
             'logical_intfs': ['ge-0/0/0.0', 'ge-0/0/1.0'],
             'vlan_tag': '100',
-        }
+	}
 
         default_fi = {
-            'fi_index': 0,
+            'fi_index': 1,
             'fabric_intf': 'fi0',
             'fab_phy_intfs': ['ge-0/0/0', 'ge-0/0/1'],
-        }
+	}
         if args.conf_file:
             config = ConfigParser.SafeConfigParser()
             config.read([args.conf_file])
@@ -791,74 +1554,75 @@ class MxRouter(object):
 
 def main(args_str=None):
     mx_router = MxRouter(None)
-    import pdb; pdb.set_trace()
+
     #mx_router.add_network_element('vmxAccess', '169.254.0.11')
+    #mx_router.add_network_element('vmxService01', '169.254.0.20')
+    #mx_router.add_network_element('vmxService02', '169.254.0.27')
+
     #mx_router.delete_network_element('vmxAccess')
-    ##mx_router.add_network_element('vmxService01', '169.254.0.20')
-    ##mx_router.add_network_element('vmxService02', '169.254.0.27')
-
-    print "--- show all elements---"
-    #mx_router.show_all_network_elements()
-
-#    #import pdb; pdb.set_trace()
-#    print "--- deleting  vmxService01 ---"
-#    mx_router.delete_network_element('vmxService01')
-#    print "--- showing remaining elements---"
-#    mx_router.show_all_network_elements()
-#    print "--- deleting  vmx4 ---"
-#    mx_router.delete_network_element('vmx4')
-#    print "--- showing remaining elements---"
-#    mx_router.show_all_network_elements()
-#    print "--- deleting  vmx4 ---"
-#    mx_router.delete_network_element('vmx5')
-#    print "--- showing remaining elements---"
-#    print "--- deleting  vmxService ---"
-#    mx_router.delete_network_element('vmxService')
-#    print "--- showing remaining elements---"
-    mx_router.add_network_physical_interfaces('vmxAccess', '192.254.0.11', 'ge-0/0/0')
-    mx_router.add_network_physical_interfaces('vmxAccess', '192.254.0.11', 'ge-0/0/1')
-    ##mx_router.add_network_physical_interfaces('vmxService01', '192.254.0.20', 'ge-0/0/1')
-    ##mx_router.add_network_physical_interfaces('vmxService02', '192.254.0.27', 'ge-0/0/1')
-    #import pdb; pdb.set_trace()
-    mx_router.add_network_logical_interfaces('vmxAccess', '192.254.0.11', 'ge-0/0/0', 'ge-0/0/0.0', '101')
-    ##mx_router.add_network_logical_interfaces('vmxService01', '192.254.0.20', 'ge-0/0/1', 'ge-0/0/1.0', '102')
-    #mx_router.del_network_logical_interfaces('vmxService01', '192.254.0.20', 'ge-0/0/1', 'ge-0/0/1.0')
-    #mx_router.del_network_logical_interfaces('vmxService01', '192.254.0.20', 'ge-0/0/0', 'ge-0/0/0.1')
-    #mx_router.del_network_logical_interfaces('vmxAccess', '192.254.0.20', 'ge-0/0/0', 'ge-0/0/0.0')
-    #mx_router.del_network_physical_interfaces('vmxAccess', '192.254.0.20', 'ge-0/0/0')
-    fi = mx_router.create_fabric_interface('vmxAccess', '192.254.0.11')
-    fab_phy_intfs0 = ['ge-0/0/1']
-    mx_router.add_child_intefaces_to_fabric('vmxAccess', '192.254.0.11', fi, fab_phy_intfs0)
-    fi = mx_router.create_fabric_interface('vmxAccess', '192.254.0.11')
-    fab_phy_intfs0 = ['ge-0/0/2']
-    mx_router.add_child_intefaces_to_fabric('vmxAccess', '192.254.0.11', fi, fab_phy_intfs0)
-    ##self._args.fi_index = 0
-    ##fi = mx_router.create_fabric_interface('vmxService01', '192.254.0.20')
-    ##fab_phy_intfs1 = ['ge-0/0/0']
-    ##mx_router.add_child_intefaces_to_fabric('vmxService01', '192.254.0.20', fi, fab_phy_intfs1)
-    ##self._args.fi_index = 0
-    ##fi = mx_router.create_fabric_interface('vmxService02', '192.254.0.27')
-    ##fab_phy_intfs1 = ['ge-0/0/0']
-    ##mx_router.add_child_intefaces_to_fabric('vmxService02', '192.254.0.27', fi, fab_phy_intfs1)
-    #fab_phy_intfs = []
-    #mx_router.del_child_intefaces_from_fabric('vmxService01', '192.254.0.20', 'fi0', fab_phy_intfs)
-#    print "--- showing remaining fabric elements---"
-#    mx_router.show_all_fabric_elements()
-    ##mx_router.del_child_intefaces_from_fabric('vmxService01', '192.254.0.20', 'fi0', fab_phy_intfs0)
-    ##mx_router.delete_fabric_interface('vmxService01', '192.254.0.20', 'fi0')
-    ##mx_router.del_child_intefaces_from_fabric('vmxService01', '192.254.0.20', 'fi1', fab_phy_intfs1)
-    ##mx_router.delete_fabric_interface('vmxService01', '192.254.0.20', 'fi1')
-    #mx_router.delete_network_element('vmx0')
     #mx_router.delete_network_element('vmxService01')
-    #import pdb; pdb.set_trace()
-    #mx_router.delete_network_element('vmxAccess')
-    #mx_router.delete_network_element('vmx01')
-    ##mx_router.addService('vmxService01', '192.254.0.20', '101')
-    ##mx_router.addService('vmxService01', '192.254.0.20', '102')
-    ##mx_router.addService('vmxService02', '192.254.0.27', '101')
-    ##mx_router.addService('vmxService02', '192.254.0.27', '102')
-    ##mx_router.activateService('vmxAccess', 'vmxService01')
-    ##mx_router.moveService('vmxAccess', 'vmxService01', 'vmxService02')
+    #mx_router.delete_network_element('vmxService02')
+
+
+    #mx_router.add_network_physical_interfaces('vmxAccess', 'ge-0/0/0')
+    #mx_router.add_network_physical_interfaces('vmxAccess', 'ge-0/0/1')
+    #mx_router.add_network_physical_interfaces('vmxAccess', 'ge-0/0/2')
+    #mx_router.add_network_physical_interfaces('vmxAccess', 'lo0')
+
+    #mx_router.add_network_physical_interfaces('vmxService01', 'ge-0/0/0')
+    #mx_router.add_network_physical_interfaces('vmxService01', 'ge-0/0/1')
+    #mx_router.add_network_physical_interfaces('vmxService01', 'lo0')
+
+    #mx_router.add_network_physical_interfaces('vmxService02', 'ge-0/0/0')
+    #mx_router.add_network_physical_interfaces('vmxService02', 'ge-0/0/1')
+    #mx_router.add_network_physical_interfaces('vmxService02', 'lo0')
+
+    #fi = mx_router.create_fabric_interface('vmxAccess')
+    #fab_phy_intfs0 = ['ge-0/0/1']
+    #mx_router.add_child_interfaces_to_fabric('vmxAccess', fi, fab_phy_intfs0)
+
+    #fi = mx_router.create_fabric_interface('vmxAccess')
+    #fab_phy_intfs0 = ['ge-0/0/2']
+    #mx_router.add_child_interfaces_to_fabric('vmxAccess', fi, fab_phy_intfs0)
+
+    #fi = mx_router.create_fabric_interface('vmxService01')
+    #fab_phy_intfs0 = ['ge-0/0/0']
+    #mx_router.add_child_interfaces_to_fabric('vmxService01', fi, fab_phy_intfs0)
+
+    #fi = mx_router.create_fabric_interface('vmxService02')
+    #fab_phy_intfs0 = ['ge-0/0/0']
+    #mx_router.add_child_interfaces_to_fabric('vmxService02', fi, fab_phy_intfs0)
+
+    #service_vlans = []
+    #access = mx_router.addServiceInternal('vmxAccess', 'access', 'ge-0/0/0', 'fi0', service_vlans, '1.1.1.1/32')
+
+    #service_vlans = []
+    #service_vlans = ['100','101']
+    #service1 = mx_router.addService('vmxAccess', '1.1.1.1/32', 'ge-0/0/0', 'fi0', 
+                                    #service_vlans, 'vmxService01', '2.2.2.2/32')
+
+    #service_vlans = ['103']
+    #service1 = mx_router.addService('vmxAccess', '1.1.1.1/32', 'ge-0/0/0', 'fi0', 
+                                    #service_vlans, 'vmxService01', '2.2.2.2/32')
+    #service_vlans = ['150', '151']
+    #service1 = mx_router.addService('vmxAccess', '1.1.1.1/32', 'ge-0/0/0', 'fi1', 
+    #                                service_vlans, 'vmxService01', '3.3.3.3/32')
+    #service_vlans = ['100','101']
+    #service1 = mx_router.addServiceInternal('vmxService01', 'service', 'fi0', 'ps0', service_vlans, '2.2.2.2/32')
+
+    #mx_router.activateService('vmxAccess', 'vmxService01', '1.1.1.1', '2.2.2.2')
+
+    #service_vlans = ['100','101']
+    #service2 = mx_router.addServiceInternal('vmxService02', 'service', 'fi0', 'ps0', service_vlans, '3.3.3.3/32')
+
+    #service_vlans = ['100','101', '103']
+    #service1 = mx_router.moveService('vmxAccess', '1.1.1.1/32', 'ge-0/0/0', 'fi1', 
+    #                                 service_vlans, 'vmxService02', '3.3.3.3/32')
+    #service_vlans = "all"
+    #service1 = mx_router.deleteService('vmxAccess', '1.1.1.1/32', 'fi0', 
+                                    #service_vlans, 'vmxService01', '2.2.2.2/32')
+    #mx_router.moveServiceInternal('vmxAccess', 'vmxService01', '1.1.1.1', '2.2.2.2')
+    #mx_router.moveServiceInternal('vmxAccess', 'vmxService02', '1.1.1.1', '3.3.3.3')
 
 # end main
 
