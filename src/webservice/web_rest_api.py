@@ -17,6 +17,7 @@ import bottle
 import network_element
 import conn_link
 import services
+import vlan_autosense
 from infra.log import Logger
 
 # Logger
