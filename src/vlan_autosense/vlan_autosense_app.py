@@ -15,7 +15,7 @@ import thread
 import time
 import socket
 import json
-from ctypes import *
+import struct
 
 sys.path.append(os.path.expanduser('../'))
 
@@ -27,12 +27,6 @@ from request_services import *
 
 # Logger
 _LOG = Logger("e2_app", __name__, "debug")
-
-class auto_sense_vlan_t(Structure):
-    _fields_ = [
-        ("vlan_id", c_short),
-        ("port_name", c_char_p),
-    ]
 
 def vlan_autosense_app (host, port, e2_web_ip, e2_web_port):
     # Start the vlan autosense thread
@@ -51,13 +45,28 @@ def vlan_autosense(threadName, host, port, e2_web_ip, e2_web_port):
     count = 0
     while True:
         data, addr = sock.recvfrom(2048)  # buffer size is 2048 bytes
-        print "Received message:", data
         count += 1
+        print "Received message (", count, "): ", data
 
         # Decode the packet
         # TODO
-        vlan = 100
-        port = 'ge-0/0/9'
+        payload_len = len(data)
+        print payload_len
+        adj_payload_len = payload_len - 2 # size of vlan id
+        vlan_data = data[0:2]
+        port_data = data[2:payload_len]
+        print vlan_data, port_data
+        (vlan, ) = struct.unpack('!h', vlan_data)
+        print "final: ", vlan
+        (port, ) = struct.unpack(str(adj_payload_len) + 's', port_data)
+        print port
+        print type(port)
+        index = port.find('\x00')
+        print index
+        port = port[0:index]
+        print "final: ", port
+        # vlan = 100
+        # port = 'ge-0/0/9'
         node = 'vmxAccess'
 
         vlanservice = VlanService()
