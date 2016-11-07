@@ -23,8 +23,8 @@ import infra.id_manager as id_manager
 from infra.log import Logger
 
 from network_element import _ne_dict
-# from contrail_infra_client.mxrouter import mx_router
-# from contrail_infra_client.provision_mxrouters import *
+from contrail_infra_client.mxrouter import mx_router
+from contrail_infra_client.provision_mxrouters import *
 
 # Logger
 _LOG = Logger("e2_app", __name__, "debug")
@@ -104,7 +104,7 @@ def vlanauto_creation_handler():
     _vlan_autosense[(access_node, port)] = None
 
     # Add in contrail
-    # mx_router.add_network_physical_interfaces(access_node, port)
+    mx_router.add_network_physical_interfaces(access_node, port)
 
     # return 200 Success
     _LOG.debug("Good, return 200 Success")
@@ -153,7 +153,7 @@ def vlanauto_delete_handler(access_node, port):
         return
 
     # Delete
-    # mx_router.delete_network_physical_interfaces(name, port)
+    mx_router.delete_network_physical_interfaces(name, port)
 
     # Delete the network element object as well
     del _vlan_autosense[(access_node, port)]
