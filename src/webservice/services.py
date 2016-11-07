@@ -308,9 +308,9 @@ def services_update_handler(name):
     vlan_list = []
     for avlan in service_obj.access_vlans:
         vlan_list.append(str(avlan))
-    mx_router.addService(ne_access_obj.name, ne_access_obj.router_id+"/32",
-                         service_obj.access_port, new_conn_link_obj.access_fab_intf, vlan_list,
-                         new_ne_service_obj.name, new_ne_service_obj.router_id+"/32")
+    mx_router.moveService(ne_access_obj.name, ne_access_obj.router_id+"/32",
+                          service_obj.access_port, new_conn_link_obj.access_fab_intf, vlan_list,
+                          new_ne_service_obj.name, new_ne_service_obj.router_id+"/32")
 
     # Contrail old service deletion
     mx_router.deleteService(ne_access_obj.name, ne_access_obj.router_id+"/32",

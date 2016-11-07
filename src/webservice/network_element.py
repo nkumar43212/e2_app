@@ -32,8 +32,8 @@ _ne_dict = dict()
 # RouterId manager
 class RouterId:
     def __init__(self):
-        # 254 Ids
-        self.idm = id_manager.IdManager(254)
+        # Support only 5 ids for now
+        self.idm = id_manager.IdManager([51, 61, 71, 81, 91])
 
     def getRouterId(self):
         id = self.idm.get_id()
