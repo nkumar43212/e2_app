@@ -28,6 +28,29 @@ VlanServiceDB = None
 # VlanConfiguredServiceDB
 VlanCfgServiceDB = dict()
 
+
+def initializeVlanServiceDB(schema_file, data_file):
+    try:
+        schema = open(schema_file).read()
+        data = open(data_file).read()
+        try:
+            jsonschema.validate(json.loads(data), json.loads(schema))
+        except jsonschema.ValidationError as e:
+            print e.message
+        except jsonschema.SchemaError as e:
+            print e
+        else:
+            _LOG.info("Authentication Schema and Data is good")
+
+    except:
+        _LOG.exception("Authentication Files not found in local directory")
+        sys.exit(1)
+
+    # Intialize the DB
+    data_json = json.loads(data)
+    global VlanServiceDB
+    VlanServiceDB = data_json["VlanServiceDB"]
+
 class VlanDb(object):
     def __init__(self):
         pass
@@ -73,7 +96,8 @@ class VlanService(object):
         serviceobj = vlancfgdb.findVlanServiceObj(access_node, access_port, access_vlan)
         if serviceobj is not None:
             _LOG.info("Service for vlan already configured: (" + access_node + ", " +
-                      access_port + ", "  + str(vlan) + ")")
+                      access_port + ", "  + str(access_vlan) + ")")
+            return None
         else:
             vlandb = VlanDb()
             vlanservice = vlandb.findVlanServiceObj(access_node, access_port, access_vlan)
@@ -94,10 +118,12 @@ class VlanService(object):
                 serviceobj['service_node'] = vlanservice['serviceNode']
                 vlancfgdb.addVlanServiceObj(serviceobj)
                 _LOG.info("Service for vlan found in authentication DB and Added: (" + access_node + ", " +
-                          access_port + ", " + str(vlan) + ")")
+                          access_port + ", " + str(access_vlan) + ")")
+                return serviceobj
             else:
                 _LOG.info("Service for vlan not found in authentication DB: (" + access_node + ", " +
-                          access_port + ", "  + str(vlan)  + ")")
+                          access_port + ", "  + str(access_vlan)  + ")")
+                return None
 
 
 # Main function
@@ -112,23 +138,7 @@ if __name__ == "__main__":
     _LOG.set_handler("/tmp/" + filename + ".log", 65535, 2, "")
     _LOG.set_level("DEBUG")
 
-    try:
-        schema = open("vlan_service_schema.json").read()
-        data = open("vlan_service_db.json").read()
-        try:
-            jsonschema.validate(json.loads(data), json.loads(schema))
-        except jsonschema.ValidationError as e:
-            print e.message
-        except jsonschema.SchemaError as e:
-            print e
-        else:
-            print "Schema and data is good"
-
-    except:
-        print "Files not found in local directory"
-
-    data_json = json.loads(data)
-    VlanServiceDB = data_json["VlanServiceDB"]
+    initializeVlanServiceDB("vlan_service_schema.json", "vlan_service_db.json")
 
     # Within service db
     vlandb = VlanDb()

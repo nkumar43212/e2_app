@@ -15,21 +15,59 @@ import thread
 import time
 import socket
 import json
+from ctypes import *
 
 sys.path.append(os.path.expanduser('../'))
 
+import third_party.jsonschema as jsonschema
 import third_party.requests.requests as requests
 from infra.log import Logger
+from vlan_authentication import *
+from request_services import *
 
 # Logger
 _LOG = Logger("e2_app", __name__, "debug")
 
-def vlan_autosense_app (host, port):
+class auto_sense_vlan_t(Structure):
+    _fields_ = [
+        ("vlan_id", c_short),
+        ("port_name", c_char_p),
+    ]
+
+def vlan_autosense_app (host, port, e2_web_ip, e2_web_port):
     # Start the vlan autosense thread
     _LOG.debug("Starting E2 Vlan Autosensing Application on port " + str(port))
-    # Supply host and port --- TODO
-    thread.start_new_thread(vlan_autosense, ("Vlan autosense thread",))
+    thread.start_new_thread(vlan_autosense, ("Vlan autosense thread", host, port, e2_web_ip, e2_web_port))
 
+def vlan_autosense(threadName, host, port, e2_web_ip, e2_web_port):
+    initializeVlanServiceDB("vlan_autosense/vlan_service_schema.json", "vlan_autosense/vlan_service_db.json")
+
+    # Create socket --- TODO handle error condition
+    sock = socket.socket(socket.AF_INET,  # Internet
+                         socket.SOCK_DGRAM)  # UDP
+    sock.bind((host, port))
+
+    _LOG.info("Ready to receive UDP data traffic on port = " + str(port))
+    count = 0
+    while True:
+        data, addr = sock.recvfrom(2048)  # buffer size is 2048 bytes
+        print "Received message:", data
+        count += 1
+
+        # Decode the packet
+        # TODO
+        vlan = 100
+        port = 'ge-0/0/9'
+        node = 'vmxAccess'
+
+        vlanservice = VlanService()
+        serviceobj = vlanservice.searchAndAddService(node, port, vlan)
+
+        if serviceobj is not None:
+            client = ServiceClient('127.0.0.1', 10001)
+            vlan_list = []
+            vlan_list.append(vlan)
+            status = client.addNewService(serviceobj['name'], node, port, vlan_list, serviceobj['service_node'])
 
 # Define a function for the thread
 def print_time(threadName, delay):
@@ -39,8 +77,6 @@ def print_time(threadName, delay):
       count += 1
       print "%s: %s" % (threadName, time.ctime(time.time()))
 
-def vlan_autosense(threadName):
-    udp_receive(threadName)
 
 def udp_receive(threadName):
     UDP_IP = "127.0.0.1"
@@ -53,7 +89,7 @@ def udp_receive(threadName):
     print "Ready to receive UDP data traffic on port = " + str(UDP_PORT)
     count = 0
     while True:
-        data, addr = sock.recvfrom(1024)  # buffer size is 1024 bytes
+        data, addr = sock.recvfrom(2048)  # buffer size is 2048 bytes
         print "received message:", data
         count += 1
 

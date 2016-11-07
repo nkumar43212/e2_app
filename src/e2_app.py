@@ -56,7 +56,8 @@ if __name__ == "__main__":
 
         # Start vlan autosensing
         if config_handler.e2_cfg.vlan_autosense:
-            vlan_autosense_app(config_handler.e2_cfg.vlan_autosense_host, config_handler.e2_cfg.vlan_autosense_port)
+            vlan_autosense_app(config_handler.e2_cfg.vlan_autosense_host, config_handler.e2_cfg.vlan_autosense_port,
+                               '127.0.0.1', config_handler.e2_cfg.http_port)
 
         # Start the web service
         web_rest_api(config_handler.e2_cfg.host, config_handler.e2_cfg.http_port, config_handler.e2_cfg.mode)
