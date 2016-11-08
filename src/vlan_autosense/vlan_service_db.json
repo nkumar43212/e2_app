@@ -3,7 +3,7 @@
     {
       "serviceName": "red",
       "accessNode": "vmxAccess",
-      "accessPort": "ge-0/0/9",
+      "accessPort": "ge-0/0/0",
       "accessVlanMin": 100,
       "accessVlanMax": 150,
       "serviceNode": "vmxService01"
