@@ -144,14 +144,14 @@ if __name__ == "__main__":
     vlandb = VlanDb()
     vlan_list = [100, 200, 202, 140, 151]
     for vlan in vlan_list:
-        vlanservice = vlandb.findVlanServiceObj('vmxAccess', 'ge-0/0/9', vlan)
+        vlanservice = vlandb.findVlanServiceObj('vmxAccess', 'ge-0/0/0', vlan)
         print vlanservice
 
     # Within current config db
     vlancfgdb = VlanCfgDb()
-    vlancfgdb.findVlanServiceObj("vmxAccess", "ge-0/0/9", 100)
+    vlancfgdb.findVlanServiceObj("vmxAccess", "ge-0/0/0", 100)
 
     print "\n\nVlan searching"
     vlanservice = VlanService()
-    vlanservice.searchAndAddService("vmxAccess", "ge-0/0/9", 100)
-    vlanservice.searchAndAddService("vmxAccess", "ge-0/0/9", 100)
+    vlanservice.searchAndAddService("vmxAccess", "ge-0/0/0", 100)
+    vlanservice.searchAndAddService("vmxAccess", "ge-0/0/0", 100)
